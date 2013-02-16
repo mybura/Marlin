@@ -468,3 +468,4 @@ static void lcd_implementation_quick_feedback()
 #endif
 }
 #endif//ULTRA_LCD_IMPLEMENTATION_HITACHI_HD44780_H
+

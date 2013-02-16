@@ -324,17 +324,20 @@
 #define X_STEP_PIN         54
 #define X_DIR_PIN          55
 #define X_ENABLE_PIN       38
-#define X_STOP_PIN          2
+#define X_MIN_PIN           3
+#define X_MAX_PIN           2
 
 #define Y_STEP_PIN         60
 #define Y_DIR_PIN          61
 #define Y_ENABLE_PIN       56
-#define Y_STOP_PIN         15
+#define Y_MIN_PIN          14
+#define Y_MAX_PIN          15
 
 #define Z_STEP_PIN         46
 #define Z_DIR_PIN          48
 #define Z_ENABLE_PIN       62
-#define Z_STOP_PIN         19
+#define Z_MIN_PIN          18
+#define Z_MAX_PIN          19
 
 #define Z2_STEP_PIN        36
 #define Z2_DIR_PIN         34
@@ -359,7 +362,7 @@
 #endif
 #define PS_ON_PIN          12
 
-#ifdef REPRAP_DISCOUNT_SMART_CONTROLLER
+#if defined(REPRAP_DISCOUNT_SMART_CONTROLLER) || defined(G3D_PANEL)
 #define KILL_PIN           41
 #else
 #define KILL_PIN           -1
@@ -415,7 +418,11 @@
       #define BTN_EN2 35
       #define BTN_ENC 31  //the click
 
-      #define SDCARDDETECT -1  // Ramps does not use this port
+      #ifdef G3D_PANEL
+        #define SDCARDDETECT 49
+      #else
+        #define SDCARDDETECT -1  // Ramps does not use this port
+      #endif
     #endif
 
   #else //old style panel with shift register
@@ -671,6 +678,9 @@
 #define LED_PIN            -1
 
 #define FAN_PIN            -1 
+#if FAN_PIN == 12 || FAN_PIN ==13
+#define FAN_SOFT_PWM
+#endif
 
 #ifdef MELZI
 #define LED_PIN            28
@@ -713,6 +723,39 @@
 #define SDSS               24
 #endif
 
+ #ifdef ULTRA_LCD
+   #ifdef NEWPANEL
+     //we have no buzzer installed
+     #define BEEPER -1
+     //LCD Pins
+     #define LCD_PINS_RS        4
+     #define LCD_PINS_ENABLE    17
+     #define LCD_PINS_D4        30
+     #define LCD_PINS_D5        29
+     #define LCD_PINS_D6        28
+     #define LCD_PINS_D7        27
+     
+     //The encoder and click button
+     #define BTN_EN1 11  //must be a hardware interrupt pin
+     #define BTN_EN2 10 //must be hardware interrupt pin
+     #define BTN_ENC 16  //the switch
+     //not connected to a pin
+     #define SDCARDDETECT -1
+     
+     //from the same bit in the RAMPS Newpanel define
+     //encoder rotation values
+     #define encrot0 0
+     #define encrot1 2
+     #define encrot2 3
+     #define encrot3 1
+     
+     #define BLEN_C 2
+     #define BLEN_B 1
+     #define BLEN_A 0
+     
+   #endif //Newpanel
+ #endif //Ultipanel
+ 
 #endif
 
 
@@ -1488,3 +1531,4 @@
                         _E0_PINS _E1_PINS _E2_PINS             \
                         analogInputToDigitalPin(TEMP_0_PIN), analogInputToDigitalPin(TEMP_1_PIN), analogInputToDigitalPin(TEMP_2_PIN), analogInputToDigitalPin(TEMP_BED_PIN) }
 #endif
+

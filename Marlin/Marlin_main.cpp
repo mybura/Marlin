@@ -125,6 +125,8 @@
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).  
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
 // M503 - print the current settings (from memory not from eeprom)
+// M540 - Use S[0|1] to enable or disable the stop SD card print on endstop hit (requires ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
+// M600 - Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -296,6 +298,10 @@ void setup_powerhold()
       SET_OUTPUT(SUICIDE_PIN);
       WRITE(SUICIDE_PIN, HIGH);
    #endif
+ #endif
+ #if (PS_ON_PIN > -1)
+   SET_OUTPUT(PS_ON_PIN);
+   WRITE(PS_ON_PIN, PS_ON_AWAKE);
  #endif
 }
 
@@ -531,10 +537,10 @@ void get_command()
         stoptime=millis();
         char time[30];
         unsigned long t=(stoptime-starttime)/1000;
-        int sec,min;
-        min=t/60;
-        sec=t%60;
-        sprintf_P(time, PSTR("%i min, %i sec"),min,sec);
+        int hours, minutes;
+        minutes=(t/60)%60;
+        hours=t/60/60;
+        sprintf_P(time, PSTR("%i hours %i minutes"),hours, minutes);
         SERIAL_ECHO_START;
         SERIAL_ECHOLN(time);
         lcd_setstatus(time);
@@ -735,8 +741,8 @@ void process_commands()
                     || ((code_seen(axis_codes[0])) && (code_seen(axis_codes[1])) && (code_seen(axis_codes[2])));
       
       #ifdef QUICK_HOME
-      if (home_all_axis)  // Move all carriages up together until the first endstop is hit.
-      {
+        if (home_all_axis)  // Move all carriages up together until the first endstop is hit.
+        {
         current_position[X_AXIS] = 0;
         current_position[Y_AXIS] = 0;
         current_position[Z_AXIS] = 0;
@@ -754,7 +760,10 @@ void process_commands()
         current_position[Y_AXIS] = destination[Y_AXIS];
         current_position[Z_AXIS] = destination[Z_AXIS];
       }
+      
       #endif
+      
+      // Not a good idea for SCARA robots to home the arms individually... Make sure QUICK_HOME is enabled for Morgan!
       
       if((home_all_axis) || (code_seen(axis_codes[X_AXIS]))) 
       {
@@ -853,6 +862,7 @@ void process_commands()
           lcd_update();
         }
       }
+      LCD_MESSAGEPGM(MSG_RESUMING);
     }
     break;
 #endif
@@ -1129,7 +1139,7 @@ void process_commands()
     #if (PS_ON_PIN > -1)
       case 80: // M80 - ATX Power On
         SET_OUTPUT(PS_ON_PIN); //GND
-        WRITE(PS_ON_PIN, LOW);
+        WRITE(PS_ON_PIN, PS_ON_AWAKE);
         break;
       #endif
       
@@ -1140,7 +1150,7 @@ void process_commands()
         suicide();
       #elif (PS_ON_PIN > -1)
         SET_OUTPUT(PS_ON_PIN); 
-        WRITE(PS_ON_PIN, HIGH);
+        WRITE(PS_ON_PIN, PS_ON_ASLEEP);
       #endif
 		break;
         
@@ -1243,6 +1253,8 @@ void process_commands()
       break;
     case 119: // M119
     SERIAL_PROTOCOLLN(MSG_M119_REPORT);
+      //SERIAL_ECHOLN();    //DEBUG
+      //WRITE(X_MIN_PIN,1);
       #if (X_MIN_PIN > -1)
         SERIAL_PROTOCOLPGM(MSG_X_MIN);
         SERIAL_PROTOCOLLN(((READ(X_MIN_PIN)^X_ENDSTOPS_INVERTING)?MSG_ENDSTOP_HIT:MSG_ENDSTOP_OPEN));
@@ -1487,6 +1499,137 @@ void process_commands()
         Config_PrintSettings();
     }
     break;
+    #ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
+    case 540:
+    {
+        if(code_seen('S')) abort_on_endstop_hit = code_value() > 0;
+    }
+    break;
+    #endif
+    #ifdef FILAMENTCHANGEENABLE
+    case 600: //Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
+    {
+        float target[4];
+        float lastpos[4];
+        target[X_AXIS]=current_position[X_AXIS];
+        target[Y_AXIS]=current_position[Y_AXIS];
+        target[Z_AXIS]=current_position[Z_AXIS];
+        target[E_AXIS]=current_position[E_AXIS];
+        lastpos[X_AXIS]=current_position[X_AXIS];
+        lastpos[Y_AXIS]=current_position[Y_AXIS];
+        lastpos[Z_AXIS]=current_position[Z_AXIS];
+        lastpos[E_AXIS]=current_position[E_AXIS];
+        //retract by E
+        if(code_seen('E')) 
+        {
+          target[E_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_FIRSTRETRACT
+            target[E_AXIS]+= FILAMENTCHANGE_FIRSTRETRACT ;
+          #endif
+        }
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        //lift Z
+        if(code_seen('Z')) 
+        {
+          target[Z_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_ZADD
+            target[Z_AXIS]+= FILAMENTCHANGE_ZADD ;
+          #endif
+        }
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        //move xy
+        if(code_seen('X')) 
+        {
+          target[X_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_XPOS
+            target[X_AXIS]= FILAMENTCHANGE_XPOS ;
+          #endif
+        }
+        if(code_seen('Y')) 
+        {
+          target[Y_AXIS]= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_YPOS
+            target[Y_AXIS]= FILAMENTCHANGE_YPOS ;
+          #endif
+        }
+        
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        if(code_seen('L'))
+        {
+          target[E_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_FINALRETRACT
+            target[E_AXIS]+= FILAMENTCHANGE_FINALRETRACT ;
+          #endif
+        }
+        
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        //finish moves
+        st_synchronize();
+        //disable extruder steppers so filament can be removed
+        disable_e0();
+        disable_e1();
+        disable_e2();
+        delay(100);
+        LCD_ALERTMESSAGEPGM(MSG_FILAMENTCHANGE);
+        uint8_t cnt=0;
+        while(!LCD_CLICKED){
+          cnt++;
+          manage_heater();
+          manage_inactivity();
+          lcd_update();
+          
+          #if BEEPER > -1
+          if(cnt==0)
+          {
+            SET_OUTPUT(BEEPER);
+            
+            WRITE(BEEPER,HIGH);
+            delay(3);
+            WRITE(BEEPER,LOW);
+            delay(3);
+          }
+          #endif
+        }
+        
+        //return to normal
+        if(code_seen('L')) 
+        {
+          target[E_AXIS]+= -code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_FINALRETRACT
+            target[E_AXIS]+=(-1)*FILAMENTCHANGE_FINALRETRACT ;
+          #endif
+        }
+        current_position[E_AXIS]=target[E_AXIS]; //the long retract of L is compensated by manual filament feeding
+        plan_set_e_position(current_position[E_AXIS]);
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //should do nothing
+        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //move xy back
+        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], lastpos[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //move z back
+        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], lastpos[Z_AXIS], lastpos[E_AXIS], feedrate/60, active_extruder); //final untretract
+    }
+    break;
+    #endif //FILAMENTCHANGEENABLE    
     case 907: // M907 Set digital trimpot motor current using axis codes.
     {
       #if DIGIPOTSS_PIN > -1
@@ -1702,10 +1845,15 @@ void calculate_delta(float cartesian[3])
   
   float SCARA_pos[3];
   
-  SCARA_pos[X_AXIS] = cartesian[X_AXIS] - SCARA_offset_x;  //Translate SCARA
+  SCARA_pos[X_AXIS] = cartesian[X_AXIS] - SCARA_offset_x;  //Translate SCARA to standard X Y
   SCARA_pos[Y_AXIS] = cartesian[Y_AXIS] - SCARA_offset_y;
   
-  SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-pow(Linkage_1,2)-pow(Linkage_2,2)) / 45000; 
+  #if (Linkage_1 == Linkage_2)
+    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-2*pow(Linkage_1,2)) / (2 * pow(Linkage_1,2));
+  #else
+    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-pow(Linkage_1,2)-pow(Linkage_2,2)) / 45000; 
+  #endif
+  
   SCARA_S2 = sqrt(1-pow(SCARA_C2,2));
   
   SCARA_K1 = Linkage_1+Linkage_2*SCARA_C2;

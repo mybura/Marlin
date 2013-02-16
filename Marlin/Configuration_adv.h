@@ -66,6 +66,11 @@
 //#define CONTROLLERFAN_PIN 23 //Pin used for the fan to cool controller, comment out to disable this function
 #define CONTROLLERFAN_SEC 60 //How many seconds, after all motors were disabled, the fan should run
 
+// When first starting the main fan, run it at full speed for the
+// given number of milliseconds.  This gets the fan spinning reliably
+// before setting a PWM value. (Does not work with software PWM for fan on Sanguinololu)
+//#define FAN_KICKSTART_TIME 100
+
 //===========================================================================
 //=============================Mechanical Settings===========================
 //===========================================================================
@@ -141,7 +146,7 @@
 #define X_HOME_RETRACT_MM 5 
 #define Y_HOME_RETRACT_MM 5 
 #define Z_HOME_RETRACT_MM 5 
-//#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
+#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
 
 #define AXIS_RELATIVE_MODES {false, false, false, false}
 
@@ -163,7 +168,7 @@
 #define DEFAULT_MINSEGMENTTIME        20000
 
 // If defined the movements slow down when the look ahead buffer is only half full
-//#define SLOWDOWN
+#define SLOWDOWN
 
 // Frequency limit
 // See nophead's blog for more info
@@ -207,6 +212,9 @@
 //#define WATCHDOG_RESET_MANUAL
 #endif
 
+// Enable the option to stop SD printing when hitting and endstops, needs to be enabled from the LCD menu when this option is enabled.
+//#define ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
+
 // extruder advance constant (s2/mm3)
 //
 // advance (steps) = STEPS_PER_CUBIC_MM_E * EXTUDER_ADVANCE_K * cubic mm per second ^ 2
@@ -241,6 +249,23 @@ const unsigned int dropsegments=5; //everything with less than this number of st
 #ifdef ULTIPANEL
  #undef SDCARDDETECTINVERTED
 #endif
+
+// Power Signal Control Definitions
+// By default use ATX definition
+#ifndef POWER_SUPPLY
+  #define POWER_SUPPLY 1
+#endif
+// 1 = ATX
+#if (POWER_SUPPLY == 1) 
+  #define PS_ON_AWAKE  LOW
+  #define PS_ON_ASLEEP HIGH
+#endif
+// 2 = X-Box 360 203W
+#if (POWER_SUPPLY == 2) 
+  #define PS_ON_AWAKE  HIGH
+  #define PS_ON_ASLEEP LOW
+#endif
+
 //===========================================================================
 //=============================Buffers           ============================
 //===========================================================================
@@ -268,6 +293,19 @@ const unsigned int dropsegments=5; //everything with less than this number of st
 // #define FWRETRACT  //ONLY PARTIALLY TESTED
 #define MIN_RETRACT 0.1 //minimum extruded mm to accept a automatic gcode retraction attempt
 
+
+//adds support for experimental filament exchange support M600; requires display
+#ifdef ULTIPANEL
+  //#define FILAMENTCHANGEENABLE
+  #ifdef FILAMENTCHANGEENABLE
+    #define FILAMENTCHANGE_XPOS 3
+    #define FILAMENTCHANGE_YPOS 3
+    #define FILAMENTCHANGE_ZADD 10
+    #define FILAMENTCHANGE_FIRSTRETRACT -2
+    #define FILAMENTCHANGE_FINALRETRACT -100
+  #endif
+#endif
+ 
 //===========================================================================
 //=============================  Define Defines  ============================
 //===========================================================================
@@ -322,3 +360,4 @@ const unsigned int dropsegments=5; //everything with less than this number of st
 
 
 #endif //__CONFIGURATION_ADV_H
+

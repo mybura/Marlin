@@ -49,6 +49,12 @@
 #define MOTHERBOARD 33
 #endif
 
+//// The following define selects which power supply you have. Please choose the one that matches your setup
+// 1 = ATX
+// 2 = X-Box 360 203Watts (the blue wire connected to PS_ON and the red wire to VCC)
+
+#define POWER_SUPPLY 1
+
 //===========================================================================
 //============================== Delta Settings =============================
 //===========================================================================
@@ -102,6 +108,12 @@
 #define SCARA_offset_y -65 //mm
 #define SCARA_RAD2DEG 57.29577  // to convert RAD to degrees
 
+//// The following define selects which power supply you have. Please choose the one that matches your setup
+// 1 = ATX
+// 2 = X-Box 360 203Watts (the blue wire connected to PS_ON and the red wire to VCC)
+
+#define POWER_SUPPLY 1
+
 //===========================================================================
 //=============================Thermal Settings  ============================
 //===========================================================================
@@ -119,6 +131,9 @@
 // 5 is 100K thermistor - ATC Semitec 104GT-2 (Used in ParCan) (4.7k pullup)
 // 6 is 100k EPCOS - Not as accurate as table 1 (created using a fluke thermocouple) (4.7k pullup)
 // 7 is 100k Honeywell thermistor 135-104LAG-J01 (4.7k pullup)
+// 8 is 100k 0603 SMD Vishay NTCS0603E3104FXT (4.7k pullup)
+// 9 is 100k GE Sensing AL03006-58.2K-97-G1 (4.7k pullup)
+// 10 is 100k RS thermistor 198-961 (4.7k pullup)
 //
 //    1k ohm pullup tables - This is not normal, you would have to have changed out your 4.7k for 1k 
 //                          (but gives greater accuracy and more stable PID)
@@ -264,9 +279,9 @@
 #endif
 
 // The pullups are needed if you directly connect a mechanical endswitch between the signal and ground pins.
-const bool X_ENDSTOPS_INVERTING = false; // set to true to invert the logic of the endstops.
-const bool Y_ENDSTOPS_INVERTING = false; // set to true to invert the logic of the endstops.
-const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of the endstops.
+const bool X_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops. 
+const bool Y_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops. 
+const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops. 
 //#define DISABLE_MAX_ENDSTOPS
 
 // For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
@@ -291,16 +306,16 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // ENDSTOP SETTINGS:
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
 #define X_HOME_DIR 1
-#define Y_HOME_DIR 1
-#define Z_HOME_DIR 1
+#define Y_HOME_DIR 1    
+#define Z_HOME_DIR 1    // Bed home to bottom
 
-#define min_software_endstops true //If true, axis won't move to coordinates less than *_MIN_POS.
-#define max_software_endstops true //If true, axis won't move to coordinates greater than *_MAX_POS.
-
-#define X_MAX_POS 200
-#define X_MIN_POS 0
-#define Y_MAX_POS 200
-#define Y_MIN_POS 0
+#define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
+#define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
+// Travel limits after homing
+#define X_MAX_POS 205
+#define X_MIN_POS -5
+#define Y_MAX_POS 205
+#define Y_MIN_POS -5
 #define Z_MAX_POS MANUAL_Z_HOME_POS
 #define Z_MIN_POS 0
 
@@ -317,25 +332,25 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // Scara: x centered, y 0
 #define MANUAL_X_HOME_POS 100
 #define MANUAL_Y_HOME_POS 0
-#define MANUAL_Z_HOME_POS 0  // Distance between nozzle and print surface after homing.
+#define MANUAL_Z_HOME_POS 200  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
-#define HOMING_FEEDRATE {100*60, 100*60, 100*60, 0}  // set the homing speeds (mm/min)
+#define HOMING_FEEDRATE {5*60, 5*60, 4*60, 0}  // set the homing speeds (mm/min)
 
 // default settings 
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {115, 115, 40, 100}
-#define DEFAULT_MAX_FEEDRATE          {300, 300, 300, 300}  // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {500, 500, 9000, 9000}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {107.028, 107.028, 40, 100}
+#define DEFAULT_MAX_FEEDRATE          {300, 300, 5, 45}  // (mm/sec)
+#define DEFAULT_MAX_ACCELERATION      {500, 500, 100, 10000}    // X, Y, Z, E maximum start speed for accelerated moves.
 
 #define DEFAULT_ACCELERATION          24000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 // 
-#define DEFAULT_XYJERK                20.0   // (mm/sec)
-#define DEFAULT_ZJERK                 20.0   // (mm/sec)
-#define DEFAULT_EJERK                 20.0   // (mm/sec)
+#define DEFAULT_XYJERK                20.0    // (mm/sec)
+#define DEFAULT_ZJERK                 0.4     // (mm/sec)
+#define DEFAULT_EJERK                 5.0    // (mm/sec)
 
 //===========================================================================
 //=============================Additional Features===========================
@@ -359,19 +374,22 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
 //#define ULTIPANEL  //the ultipanel as on thingiverse
 
-// The RepRapDiscount Smart Controller
+// The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller
 //#define REPRAP_DISCOUNT_SMART_CONTROLLER
 
+// The GADGETS3D G3D LCD/SD Controller (blue PCB)
+// http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
+//#define G3D_PANEL
 
 //automatic expansion
-#if defined(ULTIMAKERCONTROLLER) || defined(REPRAP_DISCOUNT_SMART_CONTROLLER)
+#if defined(ULTIMAKERCONTROLLER) || defined(REPRAP_DISCOUNT_SMART_CONTROLLER) || defined(G3D_PANEL)
  #define ULTIPANEL
  #define NEWPANEL
 #endif 
 
 // Preheat Constants
-#define PLA_PREHEAT_HOTEND_TEMP 180 
+#define PLA_PREHEAT_HOTEND_TEMP 200 
 #define PLA_PREHEAT_HPB_TEMP 70
 #define PLA_PREHEAT_FAN_SPEED 255		// Insert Value between 0 and 255
 
