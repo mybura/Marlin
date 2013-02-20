@@ -168,7 +168,8 @@
 #define DEFAULT_MINSEGMENTTIME        20000
 
 // If defined the movements slow down when the look ahead buffer is only half full
-#define SLOWDOWN
+//#define SLOWDOWN // Does not work with kinematics
+
 
 // Frequency limit
 // See nophead's blog for more info

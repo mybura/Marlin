@@ -152,7 +152,7 @@ int feedmultiply=100; //100->1 200->2
 int saved_feedmultiply;
 int extrudemultiply=100; //100->1 200->2
 float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
-float add_homeing[3]={0,0,0};
+float add_homeing[3]={0,0,0};                            // Additional Homing :Theta and Psi is X and Y for SCARA
 float min_pos[3] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS };
 float max_pos[3] = { X_MAX_POS, Y_MAX_POS, Z_MAX_POS };
 uint8_t active_extruder = 0;
@@ -171,8 +171,10 @@ int fanSpeed=0;
 const char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
 static float destination[NUM_AXIS] = {  0.0, 0.0, 0.0, 0.0};
 static float delta[3] = {0.0, 0.0, 0.0};
+//static float homingoffset[3] = {0.0 , 0.0, 0.0};
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
+static bool home_XY = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
 static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 
@@ -611,9 +613,60 @@ XYZ_CONSTS_FROM_CONFIG(float, home_retract_mm, HOME_RETRACT_MM);
 XYZ_CONSTS_FROM_CONFIG(signed char, home_dir,  HOME_DIR);
 
 static void axis_is_at_home(int axis) {
+ #ifdef MORGAN_SCARA
+   float homeposition[3];
+   char i;
+   
+   if (axis < 2)
+   {
+   
+     for (i=0; i<3; i++)
+     {
+        homeposition[i] = base_home_pos(i); 
+     }  
+ 
+   // Works out real Homeposition angles using inverse kinematics, 
+   // and calculates homing offset using forward kinematics
+     calculate_delta(homeposition);
+     
+     //SERIAL_ECHOPGM("base Theta="); SERIAL_ECHO(delta[X_AXIS]);
+     //SERIAL_ECHOPGM("   base Psi+Theta="); SERIAL_ECHOLN(delta[Y_AXIS]);
+     
+     for (i=0; i<2; i++)
+     {
+        delta[i] -= add_homeing[i];
+     } 
+     
+     //SERIAL_ECHOPGM("addhome X="); SERIAL_ECHO(add_homeing[X_AXIS]);
+     //SERIAL_ECHOPGM("addhome Theta="); SERIAL_ECHO(delta[X_AXIS]);
+     //SERIAL_ECHOPGM("   addhome Psi+Theta="); SERIAL_ECHOLN(delta[Y_AXIS]);
+      
+     calculate_forward(delta);
+     
+     //SERIAL_ECHOPGM("addhome X="); SERIAL_ECHO(delta[X_AXIS]);
+     //SERIAL_ECHOPGM("   addhome Y="); SERIAL_ECHOLN(delta[Y_AXIS]);
+     
+    current_position[axis] = delta[axis];
+    min_pos[axis] =          base_min_pos(axis) + (delta[axis] - base_home_pos(axis));
+    max_pos[axis] =          base_max_pos(axis) + (delta[axis] - base_home_pos(axis));
+   } 
+   else
+   {
+ 
+      current_position[axis] = base_home_pos(axis) + add_homeing[axis];
+      min_pos[axis] =          base_min_pos(axis) + add_homeing[axis];
+      max_pos[axis] =          base_max_pos(axis) + add_homeing[axis];
+
+     
+   }  
+ 
+ 
+ #else
+ 
   current_position[axis] = base_home_pos(axis) + add_homeing[axis];
   min_pos[axis] =          base_min_pos(axis) + add_homeing[axis];
   max_pos[axis] =          base_max_pos(axis) + add_homeing[axis];
+ #endif 
 }
 
 static void homeaxis(int axis) {
@@ -737,11 +790,14 @@ void process_commands()
         destination[i] = current_position[i];
       }
       feedrate = 0.0;
+      home_XY = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])))
+                    || ((code_seen(axis_codes[0])) && (code_seen(axis_codes[1])));// && (code_seen(axis_codes[2])));
+     
       home_all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2])))
                     || ((code_seen(axis_codes[0])) && (code_seen(axis_codes[1])) && (code_seen(axis_codes[2])));
       
       #ifdef QUICK_HOME
-        if (home_all_axis)  // Move all carriages up together until the first endstop is hit.
+        if (home_all_axis || home_XY)  // Move all carriages up together until the first endstop is hit.
         {
         current_position[X_AXIS] = 0;
         current_position[Y_AXIS] = 0;
@@ -750,27 +806,27 @@ void process_commands()
 
         destination[X_AXIS] = 3 * Z_MAX_LENGTH;
         destination[Y_AXIS] = 3 * Z_MAX_LENGTH;
-        destination[Z_AXIS] = 3 * Z_MAX_LENGTH;
-        feedrate = 1.732 * homing_feedrate[X_AXIS];
+        destination[Z_AXIS] = current_position[Z_AXIS];
+        feedrate = homing_feedrate[X_AXIS];
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
         st_synchronize();
         endstops_hit_on_purpose();
 
         current_position[X_AXIS] = destination[X_AXIS];
         current_position[Y_AXIS] = destination[Y_AXIS];
-        current_position[Z_AXIS] = destination[Z_AXIS];
+        //current_position[Z_AXIS] = destination[Z_AXIS];
       }
       
       #endif
       
       // Not a good idea for SCARA robots to home the arms individually... Make sure QUICK_HOME is enabled for Morgan!
       
-      if((home_all_axis) || (code_seen(axis_codes[X_AXIS]))) 
+      if((home_all_axis || home_XY) || (code_seen(axis_codes[X_AXIS]))) 
       {
         HOMEAXIS(X);
       }
 
-      if((home_all_axis) || (code_seen(axis_codes[Y_AXIS]))) {
+      if((home_all_axis || home_XY) || (code_seen(axis_codes[Y_AXIS]))) {
         HOMEAXIS(Y);
       }
       
@@ -1324,6 +1380,16 @@ void process_commands()
       {
         if(code_seen(axis_codes[i])) add_homeing[i] = code_value();
       }
+      
+      if(code_seen('T'))       // Theta
+      {
+        add_homeing[0] = code_value() ;
+      }
+      
+      if(code_seen('P'))       // Psi
+      {
+        add_homeing[1] = code_value() ;
+      }
       break;
     #ifdef FWRETRACT
     case 207: //M207 - set retract length S[positive mm] F[feedrate mm/sec] Z[additional zlift/hop]
@@ -1824,6 +1890,28 @@ void clamp_to_software_endstops(float target[3])
     if (target[Z_AXIS] > max_pos[Z_AXIS]) target[Z_AXIS] = max_pos[Z_AXIS];
   }
 }
+
+void calculate_forward(float f_delta[3])
+{
+  // Perform forward kinematics, and place results in delta[0]
+  
+  float y1, y2;
+  
+  //SERIAL_ECHOPGM("f_delta x="); SERIAL_ECHO(f_delta[X_AXIS]);
+  //SERIAL_ECHOPGM(" y="); SERIAL_ECHO(f_delta[Y_AXIS]);
+  
+
+  y1 = sin(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1;
+  y2 = sin(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2 + y1;
+  
+  //SERIAL_ECHOPGM(" y1="); SERIAL_ECHO(y1);
+  //SERIAL_ECHOPGM(" y2="); SERIAL_ECHOLN(y2);
+  
+  
+  delta[X_AXIS] = cos(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1 + cos(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2 + SCARA_offset_x;
+  delta[Y_AXIS] = y2 + SCARA_offset_y;
+   
+}  
 
 void calculate_delta(float cartesian[3])
 {

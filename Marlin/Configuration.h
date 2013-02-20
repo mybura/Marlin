@@ -64,7 +64,7 @@
 // Make delta curves from many straight lines (linear interpolation).
 // This is a trade-off between visible corners (not enough segments)
 // and processor overload (too many expensive sqrt calls).
-#define DELTA_SEGMENTS_PER_SECOND 200
+#define DELTA_SEGMENTS_PER_SECOND 300
 
 // Center-to-center distance of the holes in the diagonal push rods.
 //#define DELTA_DIAGONAL_ROD 250.0 // mm
@@ -106,7 +106,8 @@
 // SCARA tower offset (position of Tower relative to bed zero position)
 #define SCARA_offset_x 100 //mm   
 #define SCARA_offset_y -65 //mm
-#define SCARA_RAD2DEG 57.29577  // to convert RAD to degrees
+#define SCARA_RAD2DEG 57.2957795  // to convert RAD to degrees
+//#define SCARA_DEG2RAD 0.0174532
 
 //// The following define selects which power supply you have. Please choose the one that matches your setup
 // 1 = ATX
@@ -298,7 +299,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 #define INVERT_X_DIR false    // for Mendel set to false, for Orca set to true
 #define INVERT_Y_DIR false    // for Mendel set to true, for Orca set to false
-#define INVERT_Z_DIR false    // for Mendel set to false, for Orca set to true
+#define INVERT_Z_DIR true    // for Mendel set to false, for Orca, Morgan set to true
 #define INVERT_E0_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
 #define INVERT_E1_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
 #define INVERT_E2_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
@@ -307,7 +308,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
 #define X_HOME_DIR 1
 #define Y_HOME_DIR 1    
-#define Z_HOME_DIR 1    // Bed home to bottom
+#define Z_HOME_DIR 1    // Bed home to top (0)
 
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
@@ -330,18 +331,19 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Manual homing switch locations:
 // For deltabots this means top and center of the cartesian print volume.
 // Scara: x centered, y 0
-#define MANUAL_X_HOME_POS 100
-#define MANUAL_Y_HOME_POS 0
-#define MANUAL_Z_HOME_POS 200  // Distance between nozzle and print surface after homing.
+#define MANUAL_X_HOME_POS -35
+#define MANUAL_Y_HOME_POS -60
+#define MANUAL_Z_HOME_POS 100  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
-#define HOMING_FEEDRATE {5*60, 5*60, 4*60, 0}  // set the homing speeds (mm/min)
+#define HOMING_FEEDRATE {20*60, 20*60, 10*60, 0}  // set the homing speeds (mm/min)
+//#define QUICK_HOMING_FEEDRATE 20*60
 
 // default settings 
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {107.028, 107.028, 40, 100}
-#define DEFAULT_MAX_FEEDRATE          {300, 300, 5, 45}  // (mm/sec)
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {107.028, 107.028, 627, 100}
+#define DEFAULT_MAX_FEEDRATE          {300, 300, 30, 45}  // (mm/sec)
 #define DEFAULT_MAX_ACCELERATION      {500, 500, 100, 10000}    // X, Y, Z, E maximum start speed for accelerated moves.
 
 #define DEFAULT_ACCELERATION          24000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
@@ -362,17 +364,17 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).  
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
 //define this to enable eeprom support
-//#define EEPROM_SETTINGS
+#define EEPROM_SETTINGS
 //to disable EEPROM Serial responses and decrease program space by ~1700 byte: comment this out:
 // please keep turned on if you can.
-//#define EEPROM_CHITCHAT
+#define EEPROM_CHITCHAT
 
 //LCD and SD support
 //#define ULTRA_LCD  //general lcd support, also 16x2
 //#define SDSUPPORT // Enable SD Card Support in Hardware Console
 
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
-//#define ULTIPANEL  //the ultipanel as on thingiverse
+#define ULTIPANEL  //the ultipanel as on thingiverse
 
 // The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller
@@ -399,7 +401,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 
 #ifdef ULTIPANEL
-//  #define NEWPANEL  //enable this if you have a click-encoder panel
+  #define NEWPANEL  //enable this if you have a click-encoder panel
   #define SDSUPPORT
   #define ULTRA_LCD
   #define LCD_WIDTH 20
