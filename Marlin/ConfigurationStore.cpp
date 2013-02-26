@@ -45,7 +45,8 @@ void Config_StoreSettings()
   char ver[4]= "000";
   int i=EEPROM_OFFSET;
   EEPROM_WRITE_VAR(i,ver); // invalidate data first 
-  EEPROM_WRITE_VAR(i,axis_steps_per_unit);  
+  EEPROM_WRITE_VAR(i,axis_steps_per_unit);
+  EEPROM_WRITE_VAR(i,axis_scaling);        // Add scaling for SCARA
   EEPROM_WRITE_VAR(i,max_feedrate);  
   EEPROM_WRITE_VAR(i,max_acceleration_units_per_sq_second);
   EEPROM_WRITE_VAR(i,acceleration);
@@ -95,6 +96,14 @@ void Config_PrintSettings()
     SERIAL_ECHOPAIR(" Y",axis_steps_per_unit[1]);
     SERIAL_ECHOPAIR(" Z",axis_steps_per_unit[2]);
     SERIAL_ECHOPAIR(" E",axis_steps_per_unit[3]);
+    SERIAL_ECHOLN("");
+    
+    SERIAL_ECHO_START;
+    SERIAL_ECHOLNPGM("Scaling factors:");
+    SERIAL_ECHO_START;
+    SERIAL_ECHOPAIR("  M364 X",axis_scaling[0]);
+    SERIAL_ECHOPAIR(" Y",axis_scaling[1]);
+    SERIAL_ECHOPAIR(" Z",axis_scaling[2]);
     SERIAL_ECHOLN("");
       
     SERIAL_ECHO_START;
@@ -164,6 +173,7 @@ void Config_RetrieveSettings()
     {
         // version number match
         EEPROM_READ_VAR(i,axis_steps_per_unit);  
+        EEPROM_READ_VAR(i,axis_scaling);  
         EEPROM_READ_VAR(i,max_feedrate);  
         EEPROM_READ_VAR(i,max_acceleration_units_per_sq_second);
         EEPROM_READ_VAR(i,acceleration);
