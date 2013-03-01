@@ -175,7 +175,7 @@ class Sd2Card {
    *
    * \return true for success or false for failure.
    */
-  bool init(uint8_t sckRateID = SPI_FULL_SPEED,
+  bool init(uint8_t sckRateID = SPI_HALF_SPEED,
     uint8_t chipSelectPin = SD_CHIP_SELECT_PIN);
   bool readBlock(uint32_t block, uint8_t* dst);
   /**
