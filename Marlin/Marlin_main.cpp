@@ -808,7 +808,7 @@ void process_commands()
         destination[i] = current_position[i];
       }
       feedrate = 0.0;
-      home_XY = ((code_seen(axis_codes[0])) && (code_seen(axis_codes[1])));  // Always home XY together...
+      home_XY = ((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])));  // Always home XY together...
      
       home_all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2])))
                     || ((code_seen(axis_codes[0])) && (code_seen(axis_codes[1])) && (code_seen(axis_codes[2])));

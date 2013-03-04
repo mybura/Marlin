@@ -101,7 +101,7 @@ void Config_PrintSettings()
     SERIAL_ECHO_START;
     SERIAL_ECHOLNPGM("Scaling factors:");
     SERIAL_ECHO_START;
-    SERIAL_ECHOPAIR("  M364 X",axis_scaling[0]);
+    SERIAL_ECHOPAIR("  M365 X",axis_scaling[0]);
     SERIAL_ECHOPAIR(" Y",axis_scaling[1]);
     SERIAL_ECHOPAIR(" Z",axis_scaling[2]);
     SERIAL_ECHOLN("");

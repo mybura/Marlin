@@ -27,8 +27,8 @@
 	#define MACHINE_NAME "Ultimaker"
 	#define FIRMWARE_URL "http://firmware.ultimaker.com"
 #else
-	#define MACHINE_NAME "Mendel"
-	#define FIRMWARE_URL "http://www.mendel-parts.com"
+	#define MACHINE_NAME "Morgan"
+	#define FIRMWARE_URL "http://reprap.harleystudio.co.za"
 #endif
 
 #define STRINGIFY_(n) #n
