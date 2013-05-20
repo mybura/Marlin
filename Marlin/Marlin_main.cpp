@@ -46,7 +46,7 @@
 
 #define VERSION_STRING  "1.0.0"
 
-// look here for descriptions of gcodes: http://linuxcnc.org/handbook/gcode/g-code.html
+// look here for descriptions of gcodes:http://linuxcnc.org/docs/html/gcode.html
 // http://objects.reprap.org/wiki/Mendel_User_Manual:_RepRapGCodes
 
 //Implemented Codes
@@ -162,6 +162,10 @@ int extrudemultiply=100; //100->1 200->2
 float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
 float add_homeing[3]={0,0,0};                            // Additional Homing :Theta and Psi is X and Y for SCARA
 float axis_scaling[3]={0,0,0};                                    // Build size scaling
+
+float Arm_lookup[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
+bool Y_gridcal = false;                                        // Normal mode on reset.
+
 float min_pos[3] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS };
 float max_pos[3] = { X_MAX_POS, Y_MAX_POS, Z_MAX_POS };
 uint8_t active_extruder = 0;
@@ -188,6 +192,8 @@ static float feedrate = 1500.0, next_feedrate, saved_feedrate;
 static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 
 static float SCARA_C2, SCARA_S2, SCARA_K1, SCARA_K2, SCARA_theta, SCARA_psi;
+//static float Grid_temp[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
+  
 
 static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
@@ -719,6 +725,8 @@ void process_commands()
 {
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
+  
+  int counterx, countery;
 
   if(code_seen('G'))
   {
@@ -1862,6 +1870,95 @@ void process_commands()
         }
       }
       break;
+    case 370:  // M370  Initialise Bed Level to Zero 
+      
+      Y_gridcal = true;
+      
+      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+      {
+        for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+        {
+          Arm_lookup[counterx][countery] = 0;
+        }  
+      }
+      
+      SERIAL_ECHO_START;
+      SERIAL_ECHOLN(" Y-level grid cleared  ");
+      break;
+      
+    case 371:  // M371   Program current zero position into levelling grid.
+    
+      SERIAL_ECHO_START;
+        
+      if(Y_gridcal)        // only program when gridcal set
+      {
+        SERIAL_ECHO(" X:");
+        SERIAL_ECHO(current_position[X_AXIS]);
+        SERIAL_ECHO(" Y:");
+        SERIAL_ECHO(current_position[Y_AXIS]);
+        SERIAL_ECHO(" Z:");
+        SERIAL_ECHOLN(current_position[Z_AXIS]);
+      
+        Arm_lookup[(int)current_position[X_AXIS]/10 +1][(int)current_position[Y_AXIS]/10 +1] = current_position[Z_AXIS];
+        SERIAL_ECHO(" - ");
+        SERIAL_ECHOLN("OK");
+      }  
+        else
+        {
+          SERIAL_ECHOLN("No GridCal");
+        }
+      
+    break;
+  
+    case 372:  // M371   Calculate uninitialised grid values
+  
+      //for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+      //  {
+      //     for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+      //    {
+      //       Arm_lookup[counterx][countery] = countery / 4.23;
+      //     }  
+      //  }
+      
+      SERIAL_ECHOLN(calculate_YGrid());
+  
+    break;
+   
+    case 373: // end cal 
+      
+      Y_gridcal = false;
+  
+    break;  
+    
+    case 374:  // debug: Default working grid (to keep on printing ;-)
+  
+      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+          {
+             Arm_lookup[counterx][countery] = countery / 4.23;
+           }  
+        }
+      
+      Y_gridcal = false;
+  
+    break;  
+    
+    case 375:  // debug: Default working grid (to keep on printing ;-)
+  
+      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+           {
+             SERIAL_ECHOPAIR(" " , Arm_lookup[counterx][countery] ); 
+              
+           }
+           //EEPROM_WRITE_VAR(i,Arm_lookup[counterx]);        // Z-arm corrcetion save
+    
+        }
+  
+    break;  
+      
     case 999: // M999: Restart after being stopped
       Stopped = false;
       lcd_reset_alert_level();
@@ -2011,6 +2108,145 @@ void clamp_to_software_endstops(float target[3])
   }
 }
 
+int calculate_YGrid()
+{
+  int counterx, countery,
+      counterx2, countery2,
+      counterx3, countery3,
+      delta_n, countvalues = 0, countedge = 0;
+  float  deltacalc;
+  
+  //Grid_temp = Arm_lookup; 
+  
+  //for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+  //      {
+  //         for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+  //        {
+   //          Grid_temp[counterx][countery] = Arm_lookup[counterx][countery];
+   //        }  
+   //     }
+  //SERIAL_ECHOLN(" Copied arrays");
+  
+  if (Y_gridcal)    // only calculate when gridcal set
+      {
+        for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+           {   
+               if(Arm_lookup[counterx][countery] != 0)
+               {
+                  counterx2 = counterx+1;
+                  while(Arm_lookup[counterx2][countery] == 0 && counterx2 < X_ARMLOOKUP_LENGTH)  // Look for next related value --> X
+                  {
+                     counterx2++; 
+                  }
+                  
+                  if(counterx2 < X_ARMLOOKUP_LENGTH)
+                  {
+                    delta_n = counterx2 - counterx;
+                    deltacalc = (Arm_lookup[counterx2][countery] - Arm_lookup[counterx][countery])/delta_n;
+                    for (counterx3 = counterx+1; counterx3 < counterx2; counterx3++)
+                    {
+                       Arm_lookup[counterx3][countery] =  Arm_lookup[counterx][countery] + (deltacalc * (counterx3-counterx));  // populate grid up to next calibrated value
+                       countvalues++;
+                    }
+                  }
+                  
+                  countery2 = countery+1;
+                  while(Arm_lookup[counterx][countery2] == 0 && countery2 < Y_ARMLOOKUP_LENGTH)  // Look for next related value --> Y
+                  {
+                     countery2++; 
+                  }
+                  
+                  if(countery2 < Y_ARMLOOKUP_LENGTH)
+                  {
+                    delta_n = countery2 - countery;
+                    deltacalc = (Arm_lookup[counterx][countery2] - Arm_lookup[counterx][countery])/delta_n;
+                    for (countery3 = countery+1; countery3 < countery2; countery3++)
+                    {
+                       Arm_lookup[counterx][countery3] =  Arm_lookup[counterx][countery] + (deltacalc * (countery3-countery));  // populate grid up to next calibrated value
+                       countvalues++;
+                    }
+                  }
+                  
+                  // Values for X and Y up to next calibrated value populated in Grid_temp.
+                  // Go to next populated value.
+                  SERIAL_ECHO(" *");
+                  
+               }
+           }  
+        }      // end of linear fill = All intercalibrated values should be populated.
+        
+        SERIAL_ECHOLN(" Linear fill completed");
+  
+#if false       
+        for (counterx = X_ARMLOOKUP_LENGTH/2; counterx >= 0; counterx--)
+        {
+          for (countery = Y_ARMLOOKUP_LENGTH/2; countery >= 0; countery--)
+          {
+            if(Arm_lookup[counterx][countery]==0 && Arm_lookup[counterx+1][countery] != 0)      // leading X
+            {
+                Arm_lookup[counterx][countery] = Arm_lookup[counterx+1][countery] + Arm_lookup[counterx+1][countery] - Arm_lookup[counterx+2][countery];
+            }
+            
+            if(Arm_lookup[counterx][countery]==0 && Arm_lookup[counterx][countery+1] != 0)      // leading Y
+            {
+                Arm_lookup[counterx][countery] = Arm_lookup[counterx][countery+1] + Arm_lookup[counterx][countery+1] - Arm_lookup[counterx][countery+2];
+            }
+          }  
+       }
+        
+        
+        for (counterx = X_ARMLOOKUP_LENGTH/2; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+          for (countery = Y_ARMLOOKUP_LENGTH/2; countery < Y_ARMLOOKUP_LENGTH; countery++)
+          {
+            if(Arm_lookup[counterx][countery]==0 && Arm_lookup[counterx-1][countery] != 0)      // trailing X
+            {
+                Arm_lookup[counterx][countery] = Arm_lookup[counterx-1][countery] + Arm_lookup[counterx-1][countery] - Arm_lookup[counterx-2][countery];
+            }
+            
+            if(Arm_lookup[counterx][countery]==0 && Arm_lookup[counterx][countery-1] != 0)      // trailing Y
+            {
+                Arm_lookup[counterx][countery] = Arm_lookup[counterx][countery-1] + Arm_lookup[counterx][countery-1] - Arm_lookup[counterx][countery-2];
+            }
+          }  
+       }
+#else
+
+      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+          {
+             if(Arm_lookup[counterx][countery]==0)
+             {
+                Arm_lookup[counterx][countery] = 10;          // ****************  Temporary cheat !!!!!!!!!!!!!!!!!!!!!! 
+             }
+           }  
+        }
+ 
+#endif
+       
+       
+        
+        
+        SERIAL_ECHOLN(" Calibration done");
+  
+        
+      }
+      else
+      {
+        SERIAL_ECHOLN(" Not in Calibration mode");
+  
+      
+      }
+        
+   SERIAL_ECHOLN(" OK");
+  
+   return countvalues;  // return number of completed grid values
+  
+}
+
 void calculate_forward(float f_delta[3])
 {
   // Perform forward kinematics, and place results in delta[0]
@@ -2073,8 +2309,17 @@ void calculate_delta(float cartesian[3])
   
   delta[X_AXIS] = SCARA_theta * SCARA_RAD2DEG;  // Multiply by 180/Pi  -  theta is support arm angle
   delta[Y_AXIS] = (SCARA_theta + SCARA_psi) * SCARA_RAD2DEG;  //       -  equal to sub arm angle (inverted motor)
- 
-  delta[Z_AXIS] = cartesian[Z_AXIS];    // Standard Z for Morgan
+  if (Y_gridcal)
+  {
+     delta[Z_AXIS] = cartesian[Z_AXIS]; 
+  }
+  else
+  {
+    delta[Z_AXIS] = cartesian[Z_AXIS] + calc_bed_delta(cartesian);
+  }
+  //SERIAL_ECHOLN(calc_bed_delta(cartesian));
+  //SERIAL_ECHOLN(" ");
+  
   
   /*
   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(cartesian[X_AXIS]);
@@ -2098,8 +2343,44 @@ void calculate_delta(float cartesian[3])
   
 }
 
+float calc_bed_delta(float cartesian[3])
+{
+  
+  float Zdeltacalc, dCartX, dCartY, fCartX, fCartY;
+  int CartX, CartY;
+  
+  if (cartesian[X_AXIS] < X_MIN_POS || cartesian[Y_AXIS] < Y_MIN_POS)    // Not within grid range!
+  {
+     return 0; 
+  }  
+  
+  CartX = cartesian[X_AXIS]/10 + 1;                                      // Get the current sector (X)
+  dCartX = Arm_lookup[CartX+1][CartY] - Arm_lookup[CartX][CartY];        // Calc difference between this and next sector
+  fCartX = (cartesian[X_AXIS]/10 + 1) - CartX;  // Find fraction of sector
+
+  //SERIAL_ECHOLN(dCartX);
+  
+  CartY = cartesian[Y_AXIS]/10 + 1;                                  // Get the current sector (Y)
+  dCartY = Arm_lookup[CartX][CartY+1] - Arm_lookup[CartX][CartY];
+  fCartY = (cartesian[Y_AXIS]/10 + 1) - CartY;  // Find fraction of sector (Position to next sector)
+
+  //SERIAL_ECHOLN(dCartY);
+  //SERIAL_ECHOLN(fCartY);
+  //SERIAL_ECHOLN(Arm_lookup[CartX][CartY]);
+  
+  return Arm_lookup[CartX][CartY] + (dCartX*fCartX+dCartY*fCartY);    // Calculated Z-delta  
+
+  
+}
+
+
 void prepare_move()
 {
+  
+  
+  //destination[Z_AXIS]+= Arm_lookup[(int)destination[X_AXIS]/10][(int) destination[Y_AXIS]/10];
+  //SERIAL_ECHOPGM("*"); SERIAL_ECHO(destination[Z_AXIS]);
+  
   clamp_to_software_endstops(destination);
   
   //SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
@@ -2111,6 +2392,7 @@ void prepare_move()
   for (int8_t i=0; i < NUM_AXIS; i++) {
     difference[i] = destination[i] - current_position[i];
   }
+  
   float cartesian_mm = sqrt(sq(difference[X_AXIS]) +
                             sq(difference[Y_AXIS]) +
                             sq(difference[Z_AXIS]));
@@ -2135,7 +2417,8 @@ void prepare_move()
                      destination[E_AXIS], feedrate*feedmultiply/60/100.0,
                      active_extruder);
   }
-
+  
+   
   for(int8_t i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
   }

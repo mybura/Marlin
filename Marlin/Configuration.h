@@ -313,16 +313,19 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
 // Travel limits after homing
-#define X_MAX_POS 205
-#define X_MIN_POS -5
-#define Y_MAX_POS 205
-#define Y_MIN_POS -5
+#define X_MAX_POS 210
+#define X_MIN_POS -10
+#define Y_MAX_POS 210
+#define Y_MIN_POS -10
 #define Z_MAX_POS MANUAL_Z_HOME_POS
 #define Z_MIN_POS -10
 
 #define X_MAX_LENGTH (X_MAX_POS - X_MIN_POS)
 #define Y_MAX_LENGTH (Y_MAX_POS - Y_MIN_POS)
 #define Z_MAX_LENGTH (Z_MAX_POS - Z_MIN_POS)
+
+#define X_ARMLOOKUP_LENGTH (X_MAX_LENGTH / 10) + 2
+#define Y_ARMLOOKUP_LENGTH (Y_MAX_LENGTH / 10) + 2
 
 // The position of the homing switches
 #define MANUAL_HOME_POSITIONS  // If defined, MANUAL_*_HOME_POS below will be used
@@ -333,11 +336,11 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Scara: x centered, y 0
 #define MANUAL_X_HOME_POS -35
 #define MANUAL_Y_HOME_POS -60
-#define MANUAL_Z_HOME_POS 205  // Distance between nozzle and print surface after homing.
+#define MANUAL_Z_HOME_POS 275  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
-#define HOMING_FEEDRATE {20*60, 20*60, 10*60, 0}  // set the homing speeds (mm/min)
+#define HOMING_FEEDRATE {20*60, 20*60, 20*60, 0}  // set the homing speeds (mm/min)
 //#define QUICK_HOMING_FEEDRATE 20*60
 
 // default settings 
@@ -392,11 +395,11 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // Preheat Constants
 #define PLA_PREHEAT_HOTEND_TEMP 200 
-#define PLA_PREHEAT_HPB_TEMP 70
+#define PLA_PREHEAT_HPB_TEMP 60
 #define PLA_PREHEAT_FAN_SPEED 255		// Insert Value between 0 and 255
 
 #define ABS_PREHEAT_HOTEND_TEMP 240
-#define ABS_PREHEAT_HPB_TEMP 100
+#define ABS_PREHEAT_HPB_TEMP 90
 #define ABS_PREHEAT_FAN_SPEED 255		// Insert Value between 0 and 255
 
 

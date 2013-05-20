@@ -170,6 +170,9 @@ void enquecommand_P(const char *cmd); //put an ascii command at the end of the c
 void prepare_arc_move(char isclockwise);
 void clamp_to_software_endstops(float target[3]);
 
+float calc_bed_delta(float cartesian[3]);
+int calculate_YGrid();
+
 #ifdef FAST_PWM_FAN
 void setPwmFrequency(uint8_t pin, int val);
 #endif
@@ -185,6 +188,10 @@ extern int feedmultiply;
 extern int extrudemultiply; // Sets extrude multiply factor (in percent)
 extern float current_position[NUM_AXIS] ;
 extern float axis_scaling[3];  // Build size scaling
+
+extern float Arm_lookup[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
+extern bool Y_gridcal;
+
 extern float add_homeing[3];
 extern float min_pos[3];
 extern float max_pos[3];

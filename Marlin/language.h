@@ -88,6 +88,7 @@
 	#define MSG_ESTEPS "Esteps/mm"
         #define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
 	#define MSG_RECTRACT "Rectract"
 	#define MSG_TEMPERATURE "Temperature"
 	#define MSG_MOTION "Motion"
@@ -243,6 +244,8 @@
 	#define MSG_ESTEPS "krokiE/mm"
 	#define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_RECTRACT "Wycofanie"
 	#define MSG_TEMPERATURE "Temperatura"
 	#define MSG_MOTION "Ruch"
@@ -401,6 +404,8 @@
 #define MSG_ESTEPS " Epas/mm:"
 #define MSG_XSCALE "X scale"
 #define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 #define MSG_MAIN_WIDE " Principal \003"
 #define MSG_RECTRACT_WIDE " Rectractater \x7E"
 #define MSG_TEMPERATURE_WIDE " Temperature \x7E"
@@ -564,6 +569,8 @@
 	#define MSG_ESTEPS           "Esteps/mm"
 	#define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_RECTRACT_WIDE    "Rectract"
 	#define MSG_WATCH            "Beobachten"
 	#define MSG_TEMPERATURE      "Temperatur"
@@ -722,6 +729,8 @@
 #define MSG_ESTEPS " Epasos/mm:"
 #define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_MAIN_WIDE " Menu Principal  \003"
 #define MSG_RECTRACT_WIDE " Retraer         \x7E"
 #define MSG_TEMPERATURE_WIDE " Temperatura     \x7E"
@@ -880,6 +889,8 @@
 #define MSG_ESTEPS							" E шаг/mm:"
 #define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_RECTRACT    					" Откат подачи      \x7E"
 #define MSG_TEMPERATURE  				" Температура       \x7E"
 #define MSG_MOTION						" Скорости          \x7E"
@@ -1033,6 +1044,8 @@
 	#define MSG_ESTEPS               " Epassi/mm:"
 	#define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_MAIN_WIDE            " Menu Principale        \003"
 	#define MSG_RECTRACT_WIDE        " Ritrai    \x7E"
 	#define MSG_TEMPERATURE_WIDE     " Temperatura \x7E"
@@ -1198,6 +1211,8 @@
 	#define MSG_ESTEPS " Epasso/mm:"
 	#define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_MAIN_WIDE " Menu Principal  \003"
 	#define MSG_RECTRACT_WIDE " Retrair    \x7E"
 	#define MSG_TEMPERATURE_WIDE " Temperatura \x7E"
@@ -1364,6 +1379,8 @@
 	#define MSG_ESTEPS "Esteps/mm"
 	#define MSG_XSCALE "X scale"
 	#define MSG_YSCALE "Y scale"
+	#define MSG_ZOFFSET "Z offset"
+	
 	#define MSG_RECTRACT "Veda takaisin"
 	#define MSG_TEMPERATURE "Lampotila"
 	#define MSG_MOTION "Liike"

@@ -6,6 +6,7 @@
 
 void _EEPROM_writeData(int &pos, uint8_t* value, uint8_t size)
 {
+    
     do
     {
         eeprom_write_byte((unsigned char*)pos, *value);
@@ -43,7 +44,8 @@ void _EEPROM_readData(int &pos, uint8_t* value, uint8_t size)
 void Config_StoreSettings() 
 {
   char ver[4]= "000";
-  int i=EEPROM_OFFSET;
+  int i=EEPROM_OFFSET, counterx, countery;
+  ;
   EEPROM_WRITE_VAR(i,ver); // invalidate data first 
   EEPROM_WRITE_VAR(i,axis_steps_per_unit);
   EEPROM_WRITE_VAR(i,axis_scaling);        // Add scaling for SCARA
@@ -58,6 +60,18 @@ void Config_StoreSettings()
   EEPROM_WRITE_VAR(i,max_z_jerk);
   EEPROM_WRITE_VAR(i,max_e_jerk);
   EEPROM_WRITE_VAR(i,add_homeing);
+  
+  for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           //for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+           //{
+           //  SERIAL_ECHOPAIR(" " , Arm_lookup[counterx][countery] ); 
+              
+           //}
+           EEPROM_WRITE_VAR(i,Arm_lookup[counterx]);        // Z-arm corrcetion save
+    
+        }
+  
   #ifndef ULTIPANEL
   int plaPreheatHotendTemp = PLA_PREHEAT_HOTEND_TEMP, plaPreheatHPBTemp = PLA_PREHEAT_HPB_TEMP, plaPreheatFanSpeed = PLA_PREHEAT_FAN_SPEED;
   int absPreheatHotendTemp = ABS_PREHEAT_HOTEND_TEMP, absPreheatHPBTemp = ABS_PREHEAT_HPB_TEMP, absPreheatFanSpeed = ABS_PREHEAT_FAN_SPEED;
@@ -148,6 +162,16 @@ void Config_PrintSettings()
     SERIAL_ECHOPAIR(" Y" ,add_homeing[1] );
     SERIAL_ECHOPAIR(" Z" ,add_homeing[2] );
     SERIAL_ECHOLN("");
+    
+    //SERIAL_ECHO_START;
+    //SERIAL_ECHOPAIR(" DEBUG bedlevel y0:",Arm_lookup[11][1]);
+    //SERIAL_ECHOPAIR(" y50:",Arm_lookup[11][6]);
+    //SERIAL_ECHOPAIR(" y100:",Arm_lookup[11][11]);
+    //SERIAL_ECHOPAIR(" y150:",Arm_lookup[11][16]);
+    //SERIAL_ECHOPAIR(" y200:",Arm_lookup[11][21]);
+    //SERIAL_ECHOLN("");
+    
+    
 #ifdef PIDTEMP
     SERIAL_ECHO_START;
     SERIAL_ECHOLNPGM("PID settings:");
@@ -164,7 +188,7 @@ void Config_PrintSettings()
 #ifdef EEPROM_SETTINGS
 void Config_RetrieveSettings()
 {
-    int i=EEPROM_OFFSET;
+    int i=EEPROM_OFFSET, counterx, countery;
     char stored_ver[4];
     char ver[4]=EEPROM_VERSION;
     EEPROM_READ_VAR(i,stored_ver); //read stored version
@@ -185,6 +209,18 @@ void Config_RetrieveSettings()
         EEPROM_READ_VAR(i,max_z_jerk);
         EEPROM_READ_VAR(i,max_e_jerk);
         EEPROM_READ_VAR(i,add_homeing);
+        for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           EEPROM_READ_VAR(i,Arm_lookup[counterx]);    // Read arm offset settings
+        //    for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+        //   {
+        //     //Arm_lookup[counterx][countery] = countery / 5.5;
+        //     SERIAL_ECHOPAIR(" " , Arm_lookup[counterx][countery] ); 
+    
+        //   }  
+        }
+        
+        
         #ifndef ULTIPANEL
         int plaPreheatHotendTemp, plaPreheatHPBTemp, plaPreheatFanSpeed;
         int absPreheatHotendTemp, absPreheatHPBTemp, absPreheatFanSpeed;
@@ -220,6 +256,7 @@ void Config_ResetDefault()
     float tmp1[]=DEFAULT_AXIS_STEPS_PER_UNIT;
     float tmp2[]=DEFAULT_MAX_FEEDRATE;
     long tmp3[]=DEFAULT_MAX_ACCELERATION;
+    int counterx, countery;
     for (short i=0;i<4;i++) 
     {
         axis_steps_per_unit[i]=tmp1[i];  
@@ -235,6 +272,13 @@ void Config_ResetDefault()
     max_z_jerk=DEFAULT_ZJERK;
     max_e_jerk=DEFAULT_EJERK;
     add_homeing[0] = add_homeing[1] = add_homeing[2] = 0;
+    for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+        {
+           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+           {
+             Arm_lookup[counterx][countery] = countery / 5.5;
+           }  
+        }
 #ifdef ULTIPANEL
     plaPreheatHotendTemp = PLA_PREHEAT_HOTEND_TEMP;
     plaPreheatHPBTemp = PLA_PREHEAT_HPB_TEMP;
