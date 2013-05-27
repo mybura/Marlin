@@ -2450,7 +2450,7 @@ void calculate_delta(float cartesian[3])
   delta[Y_AXIS] = (SCARA_theta + SCARA_psi) * SCARA_RAD2DEG;  //       -  equal to sub arm angle (inverted motor)
   if (Y_gridcal)
   {
-     delta[Z_AXIS] = cartesian[Z_AXIS]; 
+     delta[Z_AXIS] = cartesian[Z_AXIS];         // Ignore cartesian calculation data
   }
   else
   {
@@ -2482,27 +2482,25 @@ void calculate_delta(float cartesian[3])
   
 }
 
+float dCartX1, dCartX2, fCartX, fCartY;
+int CartX, CartY;
+
 float calc_bed_delta(float cartesian[3])
 {
-  
-  float dCartX1, dCartX2, dCartZ, fCartX, fCartY;
-  int CartX, CartY;
-  
   if (cartesian[X_AXIS] < X_MIN_POS || cartesian[Y_AXIS] < Y_MIN_POS || cartesian[X_AXIS] > X_MAX_POS || cartesian[Y_AXIS] > Y_MAX_POS)    // Not within grid range!
   {
      return 0; 
   }  
   
-  CartX = cartesian[X_AXIS]/dCal_X;                                      // Get the current sector (X)
-  fCartX = ((int)cartesian[X_AXIS]/dCal_X) - CartX;  // Find mantissa of sector
+  CartX = cartesian[X_AXIS]/dCal_X;                  // Get the current sector (X)
+  fCartX = ((int)cartesian[X_AXIS]/dCal_X) - CartX;  // Find floating point
 
-  dCal_Y = Y_MAX_POS/GCal_Y;
-  CartY = cartesian[Y_AXIS]/dCal_Y;                                  // Get the current sector (Y)
-  fCartY = ((int)cartesian[Y_AXIS]/dCal_Y) - CartY;  // Find mantissa of sector (Position to next sector)
-
+  CartY = cartesian[Y_AXIS]/dCal_Y;                  // Get the current sector (Y)
+  fCartY = ((int)cartesian[Y_AXIS]/dCal_Y) - CartY;  // Find floating point
+  
   dCartX1 = (1-fCartX) * Arm_lookup[CartX][CartY] + (fCartX) * Arm_lookup[CartX+1][CartY];
   dCartX2 = (1-fCartX) * Arm_lookup[CartX][CartY+1] + (fCartX) * Arm_lookup[CartX+1][CartY+1];
-  dCartZ = fCartY * dCartX2 + (1-fCartY) * dCartX1;
+  
   /*
   // DEBUG Stuff
   SERIAL_ECHO("dX1:");
@@ -2516,9 +2514,9 @@ float calc_bed_delta(float cartesian[3])
   SERIAL_ECHO("  Z=");
   SERIAL_ECHOLN(dCartZ);
   // ********************************************************************
-  */
   
-  return dCartZ;    // Calculated Z-delta  
+  */
+  return fCartY * dCartX2 + (1-fCartY) * dCartX1;    // Calculated Z-delta  
 
   
 }

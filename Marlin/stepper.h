@@ -57,7 +57,6 @@ void st_wake_up();
 
   
 void checkHitEndstops(); //call from somwhere to create an serial error message with the locations the endstops where hit, in case they were triggered
-float Z_endstop_value(float Z_destination); // Report Z_endstop values to other fuctions
 
 void endstops_hit_on_purpose(); //avoid creation of the message, i.e. after homeing and before a routine call of checkHitEndstops();
 
