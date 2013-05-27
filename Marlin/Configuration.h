@@ -313,10 +313,10 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
 // Travel limits after homing
-#define X_MAX_POS 210
-#define X_MIN_POS -10
-#define Y_MAX_POS 210
-#define Y_MIN_POS -10
+#define X_MAX_POS 200
+#define X_MIN_POS 0
+#define Y_MAX_POS 200
+#define Y_MIN_POS 0
 #define Z_MAX_POS MANUAL_Z_HOME_POS
 #define Z_MIN_POS -10
 
@@ -324,8 +324,8 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define Y_MAX_LENGTH (Y_MAX_POS - Y_MIN_POS)
 #define Z_MAX_LENGTH (Z_MAX_POS - Z_MIN_POS)
 
-#define X_ARMLOOKUP_LENGTH (X_MAX_LENGTH / 10) + 2
-#define Y_ARMLOOKUP_LENGTH (Y_MAX_LENGTH / 10) + 2
+#define X_ARMLOOKUP_LENGTH (X_MAX_LENGTH / 20) + 1    // Maximum grid size: 2cm intervals (11 points per side for 200x200)
+#define Y_ARMLOOKUP_LENGTH (Y_MAX_LENGTH / 20) + 1
 
 // The position of the homing switches
 #define MANUAL_HOME_POSITIONS  // If defined, MANUAL_*_HOME_POS below will be used
@@ -345,16 +345,16 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // default settings 
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {215, 215, 640, 100}
-#define DEFAULT_MAX_FEEDRATE          {300, 300, 30, 45}  // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {500, 500, 5, 10000}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {215, 215, 100, 450}
+#define DEFAULT_MAX_FEEDRATE          {300, 300, 300, 45}  // (mm/sec)
+#define DEFAULT_MAX_ACCELERATION      {500, 500, 500, 10000}    // X, Y, Z, E maximum start speed for accelerated moves.
 
 #define DEFAULT_ACCELERATION          24000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 // 
 #define DEFAULT_XYJERK                20.0    // (mm/sec)
-#define DEFAULT_ZJERK                 0.4     // (mm/sec)
+#define DEFAULT_ZJERK                 20.0    // (mm/sec)
 #define DEFAULT_EJERK                 5.0    // (mm/sec)
 
 //===========================================================================
@@ -396,11 +396,11 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Preheat Constants
 #define PLA_PREHEAT_HOTEND_TEMP 200 
 #define PLA_PREHEAT_HPB_TEMP 60
-#define PLA_PREHEAT_FAN_SPEED 255		// Insert Value between 0 and 255
+#define PLA_PREHEAT_FAN_SPEED 0		// Insert Value between 0 and 255
 
 #define ABS_PREHEAT_HOTEND_TEMP 240
 #define ABS_PREHEAT_HPB_TEMP 90
-#define ABS_PREHEAT_FAN_SPEED 255		// Insert Value between 0 and 255
+#define ABS_PREHEAT_FAN_SPEED 0		// Insert Value between 0 and 255
 
 
 #ifdef ULTIPANEL

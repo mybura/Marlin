@@ -183,6 +183,25 @@ void checkHitEndstops()
  }
 }
 
+float Z_endstop_value(float Z_destination)
+{
+ float Z_val = Z_destination;
+  
+ if( endstop_z_hit) {
+   
+   Z_val = (float)endstops_trigsteps[Z_AXIS]/axis_steps_per_unit[Z_AXIS];
+   SERIAL_ECHO_START;
+   SERIAL_ECHOPGM(MSG_ENDSTOPS_HIT);
+   SERIAL_ECHOPAIR(" Z:",Z_val);
+   
+   SERIAL_ECHOLN("");
+   endstop_z_hit=false; 
+ }
+ 
+ return Z_val;
+  
+}
+
 void endstops_hit_on_purpose()
 {
   endstop_x_hit=false;

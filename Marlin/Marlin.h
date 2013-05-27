@@ -191,6 +191,9 @@ extern float axis_scaling[3];  // Build size scaling
 
 extern float Arm_lookup[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
 extern bool Y_gridcal;
+extern int GCal_X, GCal_Y,  // Position points for GridCal (Default 3) 
+           GPos_X, GPos_Y;  // used to keep calibration positions in loop
+
 
 extern float add_homeing[3];
 extern float min_pos[3];

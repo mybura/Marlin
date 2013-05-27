@@ -141,6 +141,13 @@
 // M364 - SCARA calibration: Move to cal-position PSIC (90 deg to Theta calibration position)
 // M365 - SCARA calibration: Scaling factor, X, Y, Z axis
 
+// M370 - Morgan Z calibration: Initialise calbration
+// M371 - Manual claibration point program
+// M371 - Calculate all calibration points using data aquired
+// M372 - End calibration
+// M375 - Perform automatic calibration with wand
+// M376 - Wand offset (mm) : Thckness offset of the calibration wand.
+
 //Stepper Movement Variables
 
 //===========================================================================
@@ -165,6 +172,10 @@ float axis_scaling[3]={0,0,0};                                    // Build size 
 
 float Arm_lookup[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
 bool Y_gridcal = false;                                        // Normal mode on reset.
+
+int GCal_X = 3, GCal_Y = 3,  // Position points for GridCal (Default 3) 
+           GPos_X = 0, GPos_Y = 0;  // used to keep calibration positions in loop
+
 
 float min_pos[3] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS };
 float max_pos[3] = { X_MAX_POS, Y_MAX_POS, Z_MAX_POS };
@@ -191,9 +202,8 @@ static bool home_XY = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
 static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 
-static float SCARA_C2, SCARA_S2, SCARA_K1, SCARA_K2, SCARA_theta, SCARA_psi;
+static float SCARA_C2, SCARA_S2, SCARA_K1, SCARA_K2, SCARA_theta, SCARA_psi, dCal_X = 0, dCal_Y = 0;
 //static float Grid_temp[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
-  
 
 static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
@@ -734,7 +744,7 @@ void process_commands()
     {
     case 0: // G0 -> G1
     case 1: // G1
-      if(Stopped == false) {
+      if(Stopped == false && dCal_X) {    // Ensure Unit homed.
         //  SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
         //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
         get_coordinates(); // For X Y Z E F
@@ -747,6 +757,7 @@ void process_commands()
         return;
       }
       //break;
+    /*      // Disable Arcs, for now.
     case 2: // G2  - CW ARC
       if(Stopped == false) {
         get_arc_coordinates();
@@ -758,7 +769,7 @@ void process_commands()
         get_arc_coordinates();
         prepare_arc_move(false);
         return;
-      }
+      } */
     case 4: // G4 dwell
       LCD_MESSAGEPGM(MSG_DWELL);
       codenum = 0;
@@ -809,6 +820,9 @@ void process_commands()
       saved_feedmultiply = feedmultiply;
       feedmultiply = 100;
       previous_millis_cmd = millis();
+      
+      dCal_X = X_MAX_POS/GCal_X;                   // Initialise dCal_X & dCal_Y
+      dCal_Y = Y_MAX_POS/GCal_Y;
       
       enable_endstops(true);
       
@@ -1311,6 +1325,9 @@ void process_commands()
       if(starpos!=NULL)
         *(starpos-1)='\0';
       lcd_setstatus(strchr_pointer + 5);
+      SERIAL_ECHOLN(strchr_pointer + 5);
+            
+      
       break;
     case 114: // M114
       SERIAL_PROTOCOLPGM("X:");
@@ -1874,6 +1891,14 @@ void process_commands()
       
       Y_gridcal = true;
       
+      if(code_seen('X')) GCal_X = code_value()-1;  // Manually specify number of Cal points per side. Uneven number recommended.
+      if(code_seen('Y')) GCal_Y = code_value()-1;
+
+      GPos_X = 0;
+      GPos_Y = 0;
+      dCal_X = X_MAX_POS/GCal_X;                   // Initialise dCal_X & dCal_Y
+      dCal_Y = Y_MAX_POS/GCal_Y;
+      
       for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
       {
         for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
@@ -1886,7 +1911,7 @@ void process_commands()
       SERIAL_ECHOLN(" Y-level grid cleared  ");
       break;
       
-    case 371:  // M371   Program current zero position into levelling grid.
+    case 372:  // M372   Program current zero position into levelling grid.
     
       SERIAL_ECHO_START;
         
@@ -1899,7 +1924,7 @@ void process_commands()
         SERIAL_ECHO(" Z:");
         SERIAL_ECHOLN(current_position[Z_AXIS]);
       
-        Arm_lookup[(int)current_position[X_AXIS]/10 +1][(int)current_position[Y_AXIS]/10 +1] = current_position[Z_AXIS];
+        Arm_lookup[(int)(current_position[X_AXIS]/X_MAX_POS * GCal_X)][(int)(current_position[Y_AXIS]/Y_MAX_POS * GCal_Y)] = current_position[Z_AXIS];
         SERIAL_ECHO(" - ");
         SERIAL_ECHOLN("OK");
       }  
@@ -1908,47 +1933,48 @@ void process_commands()
           SERIAL_ECHOLN("No GridCal");
         }
       
-    break;
-  
-    case 372:  // M371   Calculate uninitialised grid values
-  
-      //for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
-      //  {
-      //     for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
-      //    {
-      //       Arm_lookup[counterx][countery] = countery / 4.23;
-      //     }  
-      //  }
+    //break;  // No break: Move to next position automatically
       
-      SERIAL_ECHOLN(calculate_YGrid());
-  
-    break;
-   
-    case 373: // end cal 
+    case 371:  // M371   Move to next position on the grid ready for allignment  
       
-      Y_gridcal = false;
-  
-    break;  
-    
-    case 374:  // debug: Default working grid (to keep on printing ;-)
-  
-      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
-        {
-           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
-          {
-             Arm_lookup[counterx][countery] = countery / 4.23;
-           }  
+      if (Y_gridcal)
+      {
+        destination[X_AXIS] = GPos_X * X_MAX_POS / GCal_X;
+        destination[Y_AXIS] = GPos_Y * Y_MAX_POS / GCal_X;
+        destination[Z_AXIS] = 10;
+        feedrate = 10000;
+          
+        prepare_move();
+        st_synchronize();    // finish move
+        
+        GPos_X++;
+        
+        if ((GPos_X * X_MAX_POS / GCal_X) > X_MAX_POS){
+          GPos_X = 0;
+          GPos_Y++;
+          if ((GPos_Y * Y_MAX_POS / GCal_Y) > Y_MAX_POS){
+            GPos_Y = 0;
+            SERIAL_ECHO(" - ");
+            SERIAL_ECHOLN("Last calibration point...");
+          }
         }
+      }
+          
+    break;      
+      
+  
+    case 373: // end Grid calibration
       
       Y_gridcal = false;
   
     break;  
+ 
     
-    case 375:  // debug: Default working grid (to keep on printing ;-)
-  
-      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+    case 375:  // debug: print grid to serial  
+        for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
         {
            for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+           for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
            {
              SERIAL_ECHOPAIR(" " , Arm_lookup[counterx][countery] ); 
               
@@ -1958,6 +1984,113 @@ void process_commands()
         }
   
     break;  
+    
+    /*
+    case 374:    // Automatic Bed sensing - experimental, and currently broken by other changes
+    
+      //SERIAL_ECHO(" Z-min Pin:");
+      //    SERIAL_ECHOLN(digitalRead(Z_MIN_PIN));
+    
+      if(Y_gridcal){// && digitalRead(Z_MIN_PIN)){
+        
+        
+      
+        for (counterx = 0; counterx <= X_MAX_POS; counterx += 50)
+        {
+          for (countery = 0; countery <= Y_MAX_POS; countery += 50)
+          {
+          
+      
+            
+          
+    //counterx = 100;
+    //countery = 100;
+          
+          destination[X_AXIS] = counterx;
+          destination[Y_AXIS] = countery;
+          destination[Z_AXIS] = 20;
+          feedrate = 5000;
+          
+          prepare_move();
+          //plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+          st_synchronize();
+          
+          //enable_endstops(true);
+          destination[Z_AXIS] = -10;
+          feedrate = 500;
+          calculate_delta(destination);
+          SERIAL_ECHO(" Z-dest:");
+          SERIAL_ECHOLN(destination[Z_AXIS]);
+          
+          bool z_min_endstop= false;
+          for (delta[Z_AXIS] = current_position[Z_AXIS]; (delta[Z_AXIS] >= destination[Z_AXIS]) && z_min_endstop==false; delta[Z_AXIS] -= 0.01){
+              //z_min_endstop=(READ(Z_MIN_PIN) != Z_ENDSTOPS_INVERTING);
+              plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);   // Single move...
+              //if (z_min_endstop){
+               // SERIAL_ECHO("1");
+              //}  
+              //else
+              // {
+              //   SERIAL_ECHO("0");
+              // }
+              st_synchronize();
+              z_min_endstop=(READ(Z_MIN_PIN) != Z_ENDSTOPS_INVERTING);
+              
+          }
+          
+          //prepare_move();
+          //st_synchronize();
+          //endstops_hit_on_purpose();
+          //checkHitEndstops();
+          
+          //Z_endstop_value(destination[Z_AXIS]);
+          
+          //current_position[Z_AXIS] = Z_endstop_value(destination[Z_AXIS]);
+          Arm_lookup[(int)current_position[X_AXIS]/10 +1][(int)current_position[Y_AXIS]/10 +1] = delta[Z_AXIS];
+          
+          //#ifdef ENDSTOPS_ONLY_FOR_HOMING
+           // enable_endstops(false);
+          //#endif
+          
+          //Arm_lookup[(int)current_position[X_AXIS]/10 +1][(int)current_position[Y_AXIS]/10 +1] = current_position[Z_AXIS];
+          SERIAL_ECHO(" Z-off:");
+          SERIAL_ECHOLN(offset[Z_AXIS]);
+          
+          SERIAL_ECHO(" Z-delta:");
+          SERIAL_ECHOLN(delta[Z_AXIS]);
+          SERIAL_ECHO(" Z-cur:");
+          SERIAL_ECHOLN(current_position[Z_AXIS]);
+          SERIAL_ECHOLN(" ");
+          
+          //codenum += millis();  // keep track of when we started waiting
+          //previous_millis_cmd = millis();
+          //while(millis()  < codenum ){
+           // manage_heater();
+           // manage_inactivity();
+           // lcd_update();
+          //}
+          //endstops_hit_on_purpose();
+       
+     
+          }
+       }
+        
+          // Go to Park after last calibration position
+          destination[X_AXIS] = 0;
+          destination[Y_AXIS] = 100;
+          destination[Z_AXIS] = 20;
+          feedrate = 5000;
+          
+          prepare_move();
+          //plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+          st_synchronize();
+      
+      
+      }
+    
+    break;
+    */
+   
       
     case 999: // M999: Restart after being stopped
       Stopped = false;
@@ -2108,6 +2241,8 @@ void clamp_to_software_endstops(float target[3])
   }
 }
 
+
+/*
 int calculate_YGrid()
 {
   int counterx, countery,
@@ -2220,7 +2355,9 @@ int calculate_YGrid()
           {
              if(Arm_lookup[counterx][countery]==0)
              {
-                Arm_lookup[counterx][countery] = 10;          // ****************  Temporary cheat !!!!!!!!!!!!!!!!!!!!!! 
+                if (counterx > X_MAX_POS) Arm_lookup[counterx][countery] = Arm_lookup[counterx-1][countery];
+                else if (countery > Y_MAX_POS) Arm_lookup[counterx][countery] = Arm_lookup[counterx][countery-1];
+                else Arm_lookup[counterx][countery] = 10;          // ****************  Temporary cheat !!!!!!!!!!!!!!!!!!!!!! 
              }
            }  
         }
@@ -2246,6 +2383,8 @@ int calculate_YGrid()
    return countvalues;  // return number of completed grid values
   
 }
+*/
+
 
 void calculate_forward(float f_delta[3])
 {
@@ -2346,29 +2485,40 @@ void calculate_delta(float cartesian[3])
 float calc_bed_delta(float cartesian[3])
 {
   
-  float Zdeltacalc, dCartX, dCartY, fCartX, fCartY;
+  float dCartX1, dCartX2, dCartZ, fCartX, fCartY;
   int CartX, CartY;
   
-  if (cartesian[X_AXIS] < X_MIN_POS || cartesian[Y_AXIS] < Y_MIN_POS)    // Not within grid range!
+  if (cartesian[X_AXIS] < X_MIN_POS || cartesian[Y_AXIS] < Y_MIN_POS || cartesian[X_AXIS] > X_MAX_POS || cartesian[Y_AXIS] > Y_MAX_POS)    // Not within grid range!
   {
      return 0; 
   }  
   
-  CartX = cartesian[X_AXIS]/10 + 1;                                      // Get the current sector (X)
-  dCartX = Arm_lookup[CartX+1][CartY] - Arm_lookup[CartX][CartY];        // Calc difference between this and next sector
-  fCartX = (cartesian[X_AXIS]/10 + 1) - CartX;  // Find fraction of sector
+  CartX = cartesian[X_AXIS]/dCal_X;                                      // Get the current sector (X)
+  fCartX = ((int)cartesian[X_AXIS]/dCal_X) - CartX;  // Find mantissa of sector
 
-  //SERIAL_ECHOLN(dCartX);
-  
-  CartY = cartesian[Y_AXIS]/10 + 1;                                  // Get the current sector (Y)
-  dCartY = Arm_lookup[CartX][CartY+1] - Arm_lookup[CartX][CartY];
-  fCartY = (cartesian[Y_AXIS]/10 + 1) - CartY;  // Find fraction of sector (Position to next sector)
+  dCal_Y = Y_MAX_POS/GCal_Y;
+  CartY = cartesian[Y_AXIS]/dCal_Y;                                  // Get the current sector (Y)
+  fCartY = ((int)cartesian[Y_AXIS]/dCal_Y) - CartY;  // Find mantissa of sector (Position to next sector)
 
-  //SERIAL_ECHOLN(dCartY);
-  //SERIAL_ECHOLN(fCartY);
-  //SERIAL_ECHOLN(Arm_lookup[CartX][CartY]);
+  dCartX1 = (1-fCartX) * Arm_lookup[CartX][CartY] + (fCartX) * Arm_lookup[CartX+1][CartY];
+  dCartX2 = (1-fCartX) * Arm_lookup[CartX][CartY+1] + (fCartX) * Arm_lookup[CartX+1][CartY+1];
+  dCartZ = fCartY * dCartX2 + (1-fCartY) * dCartX1;
+  /*
+  // DEBUG Stuff
+  SERIAL_ECHO("dX1:");
+  SERIAL_ECHO(dCartX1);
+  SERIAL_ECHO("  dX2:");
+  SERIAL_ECHO(dCartX2);
+  SERIAL_ECHO("  fX:");
+  SERIAL_ECHO(fCartX);
+  SERIAL_ECHO("  fY:");
+  SERIAL_ECHO(fCartY);
+  SERIAL_ECHO("  Z=");
+  SERIAL_ECHOLN(dCartZ);
+  // ********************************************************************
+  */
   
-  return Arm_lookup[CartX][CartY] + (dCartX*fCartX+dCartY*fCartY);    // Calculated Z-delta  
+  return dCartZ;    // Calculated Z-delta  
 
   
 }

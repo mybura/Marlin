@@ -61,6 +61,8 @@ void Config_StoreSettings()
   EEPROM_WRITE_VAR(i,max_e_jerk);
   EEPROM_WRITE_VAR(i,add_homeing);
   
+  EEPROM_WRITE_VAR(i,GCal_X);
+  EEPROM_WRITE_VAR(i,GCal_Y);
   for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
         {
            //for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
@@ -68,7 +70,7 @@ void Config_StoreSettings()
            //  SERIAL_ECHOPAIR(" " , Arm_lookup[counterx][countery] ); 
               
            //}
-           EEPROM_WRITE_VAR(i,Arm_lookup[counterx]);        // Z-arm corrcetion save
+           EEPROM_WRITE_VAR(i,Arm_lookup[counterx]);        // Z-arm correction save
     
         }
   
@@ -209,6 +211,9 @@ void Config_RetrieveSettings()
         EEPROM_READ_VAR(i,max_z_jerk);
         EEPROM_READ_VAR(i,max_e_jerk);
         EEPROM_READ_VAR(i,add_homeing);
+        
+        EEPROM_READ_VAR(i,GCal_X);
+        EEPROM_READ_VAR(i,GCal_Y);
         for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
         {
            EEPROM_READ_VAR(i,Arm_lookup[counterx]);    // Read arm offset settings
@@ -272,6 +277,9 @@ void Config_ResetDefault()
     max_z_jerk=DEFAULT_ZJERK;
     max_e_jerk=DEFAULT_EJERK;
     add_homeing[0] = add_homeing[1] = add_homeing[2] = 0;
+    
+    GCal_X = 4;
+    GCal_Y = 4;
     for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
         {
            for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
