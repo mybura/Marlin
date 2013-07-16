@@ -100,10 +100,12 @@
 #define MORGAN_SCARA  
 
 // Length of inner support arm
-#define Linkage_1 150 //mm
-#define Linkage_2 150 //mm
+#define Linkage_1 150000 //um      Preprocessor cannot handle decimal point...
+// Length of outer support arm     Measure arm lengths precicely, and enter 
+#define Linkage_2 150000 //um      define in micrometer
 
-// SCARA tower offset (position of Tower relative to bed zero position)
+// SCARA tower offset (position of Tower relative to bed zero position) This do not need to be accurate
+// Homing offset calibration takes care of real homing position offset.
 #define SCARA_offset_x 100 //mm   
 #define SCARA_offset_y -65 //mm
 #define SCARA_RAD2DEG 57.2957795  // to convert RAD to degrees
@@ -336,7 +338,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Scara: x centered, y 0
 #define MANUAL_X_HOME_POS -35
 #define MANUAL_Y_HOME_POS -60
-#define MANUAL_Z_HOME_POS 275  // Distance between nozzle and print surface after homing.
+#define MANUAL_Z_HOME_POS 235  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
@@ -377,7 +379,8 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 //#define SDSUPPORT // Enable SD Card Support in Hardware Console
 
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
-#define ULTIPANEL  //the ultipanel as on thingiverse
+
+//#define ULTIPANEL  //the ultipanel as on thingiverse
 
 // The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller

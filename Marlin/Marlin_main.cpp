@@ -136,17 +136,16 @@
 // ************ SCARA Specific - This can change to suit future G-code regulations
 // M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
 // M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree)
-// M362 - SCARA calibration: Move to cal-position PsiA (90 deg calibration)
+// M362 - SCARA calibration: Move to cal-position PsiA (0 deg calibration)
 // M363 - SCARA calibration: Move to cal-position PsiB (90 deg calibration - steps per degree)
 // M364 - SCARA calibration: Move to cal-position PSIC (90 deg to Theta calibration position)
 // M365 - SCARA calibration: Scaling factor, X, Y, Z axis
 
 // M370 - Morgan Z calibration: Initialise calbration
 // M371 - Manual claibration point program
-// M371 - Calculate all calibration points using data aquired
-// M372 - End calibration
-// M375 - Perform automatic calibration with wand
-// M376 - Wand offset (mm) : Thckness offset of the calibration wand.
+// M372 - Calculate all calibration points using data aquired
+// M373 - End calibration
+// M375 - Dsiplay calibration matrix
 
 //Stepper Movement Variables
 
@@ -756,7 +755,10 @@ void process_commands()
         //ClearToSend();
         return;
       }
-      //break;
+      else {
+         SERIAL_ECHOLN("  No movement - Home first...");
+      }  
+      break;
     /*      // Disable Arcs, for now.
     case 2: // G2  - CW ARC
       if(Stopped == false) {
@@ -2396,14 +2398,14 @@ void calculate_forward(float f_delta[3])
   //SERIAL_ECHOPGM(" y="); SERIAL_ECHO(f_delta[Y_AXIS]);
   
 
-  y1 = sin(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1;
-  y2 = sin(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2 + y1;
+  y1 = sin(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1/1000;
+  y2 = sin(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2/1000 + y1;
   
   //SERIAL_ECHOPGM(" y1="); SERIAL_ECHO(y1);
   //SERIAL_ECHOPGM(" y2="); SERIAL_ECHOLN(y2);
   
   
-  delta[X_AXIS] = cos(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1 + cos(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2 + SCARA_offset_x;
+  delta[X_AXIS] = cos(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1/1000 + cos(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2/1000 + SCARA_offset_x;
   delta[Y_AXIS] = y2 + SCARA_offset_y;
    
 }  
@@ -2432,15 +2434,15 @@ void calculate_delta(float cartesian[3])
   SCARA_pos[Y_AXIS] = cartesian[Y_AXIS] * axis_scaling[Y_AXIS] - SCARA_offset_y;  // With scaling factor.
   
   #if (Linkage_1 == Linkage_2)
-    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-2*pow(Linkage_1,2)) / (2 * pow(Linkage_1,2));
+    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-2*pow(Linkage_1/1000,2)) / (2 * pow(Linkage_1/1000,2));
   #else
-    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-pow(Linkage_1,2)-pow(Linkage_2,2)) / 45000; 
+    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-pow(Linkage_1/1000,2)-pow(Linkage_2/1000,2)) / 45000; 
   #endif
   
   SCARA_S2 = sqrt(1-pow(SCARA_C2,2));
   
-  SCARA_K1 = Linkage_1+Linkage_2*SCARA_C2;
-  SCARA_K2 = Linkage_2*SCARA_S2;
+  SCARA_K1 = Linkage_1/1000+Linkage_2/1000*SCARA_C2;
+  SCARA_K2 = Linkage_2/1000*SCARA_S2;
   
   SCARA_theta = (atan2(SCARA_pos[X_AXIS],SCARA_pos[Y_AXIS])-atan2(SCARA_K1, SCARA_K2))*-1;
   SCARA_psi = atan2(SCARA_S2,SCARA_C2);
