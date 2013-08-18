@@ -1332,6 +1332,9 @@ void process_commands()
       
       break;
     case 114: // M114
+      if (!dCal_X){
+        SERIAL_ECHOLN(" *** Home Pending ***");
+      }  
       SERIAL_PROTOCOLPGM("X:");
       SERIAL_PROTOCOL(current_position[X_AXIS]);
       SERIAL_PROTOCOLPGM("Y:");
@@ -1366,6 +1369,8 @@ void process_commands()
       SERIAL_PROTOCOLPGM("   Psi+Theta:");
       SERIAL_PROTOCOL((delta[Y_AXIS]-delta[X_AXIS])/90*axis_steps_per_unit[Y_AXIS]);
       SERIAL_PROTOCOLLN("");
+      SERIAL_PROTOCOLLN("");
+      
       break;
     case 120: // M120
       enable_endstops(false) ;
@@ -1809,7 +1814,8 @@ void process_commands()
     }
     break;
     case 360:  // SCARA Theta pos1
-      if(Stopped == false) {
+      SERIAL_ECHOLN(" Cal: Theta 0 ");
+      if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 0;
         delta[1] = 120;
@@ -1823,7 +1829,8 @@ void process_commands()
       }
     break;
     case 361:  // SCARA Theta pos2
-      if(Stopped == false) {
+      SERIAL_ECHOLN(" Cal: Theta 90 ");
+      if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 90;
         delta[1] = 130;
@@ -1837,7 +1844,8 @@ void process_commands()
       }
     break;
     case 362:  // SCARA Psi pos1
-      if(Stopped == false) {
+      SERIAL_ECHOLN(" Cal: Psi 0 ");
+      if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 60;
         delta[1] = 180;
@@ -1851,7 +1859,8 @@ void process_commands()
       }
     break;
     case 363:  // SCARA Psi pos2
-      if(Stopped == false) {
+      SERIAL_ECHOLN(" Cal: Psi 90 ");
+      if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 50;
         delta[1] = 90;
@@ -1865,7 +1874,8 @@ void process_commands()
       }
     break;
     case 364:  // SCARA Psi pos3 (90 deg to Theta)
-      if(Stopped == false) {
+      SERIAL_ECHOLN(" Cal: Theta-Psi 90 ");
+      if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 45;
         delta[1] = 135;
