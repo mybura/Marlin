@@ -25,6 +25,7 @@
 // 11 = Gen7 v1.1, v1.2 = 11
 // 12 = Gen7 v1.3
 // 13 = Gen7 v1.4
+// 131 = OpenHardware.co.za custom Gen7 electronics
 // 3  = MEGA/RAMPS up to 1.2 = 3
 // 33 = RAMPS 1.3 (Power outputs: Extruder, Bed, Fan)
 // 34 = RAMPS 1.3 (Power outputs: Extruder0, Extruder1, Bed)
@@ -46,7 +47,7 @@
 // 301 = Rambo
 
 #ifndef MOTHERBOARD
-#define MOTHERBOARD 33
+#define MOTHERBOARD 131 //33
 #endif
 
 //// The following define selects which power supply you have. Please choose the one that matches your setup
@@ -64,7 +65,9 @@
 // Make delta curves from many straight lines (linear interpolation).
 // This is a trade-off between visible corners (not enough segments)
 // and processor overload (too many expensive sqrt calls).
-#define DELTA_SEGMENTS_PER_SECOND 200
+//
+// 200 per second: 16MHz clock   250 per second: 20MHz clock
+#define DELTA_SEGMENTS_PER_SECOND 250
 
 // Center-to-center distance of the holes in the diagonal push rods.
 //#define DELTA_DIAGONAL_ROD 250.0 // mm
@@ -349,14 +352,14 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {215, 215, 100, 450}
 #define DEFAULT_MAX_FEEDRATE          {300, 300, 300, 45}  // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {500, 500, 500, 10000}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_MAX_ACCELERATION      {400, 400, 400, 8000}    // X, Y, Z, E maximum start speed for accelerated moves.
 
-#define DEFAULT_ACCELERATION          24000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
+#define DEFAULT_ACCELERATION          9000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 // 
-#define DEFAULT_XYJERK                20.0    // (mm/sec)
-#define DEFAULT_ZJERK                 20.0    // (mm/sec)
+#define DEFAULT_XYJERK                10.0    // (mm/sec)
+#define DEFAULT_ZJERK                 10.0    // (mm/sec)
 #define DEFAULT_EJERK                 5.0    // (mm/sec)
 
 //===========================================================================

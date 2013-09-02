@@ -43,7 +43,7 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-#include "WString.h"
+#include <WString.h>
 
 #ifdef AT90USB
   #define MYSERIAL Serial
