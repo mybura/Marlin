@@ -332,20 +332,24 @@
 #define E0_DIR_PIN 18
 #define E0_ENABLE_PIN 25
 
+#define E1_STEP_PIN     20     
+#define E1_DIR_PIN      18     
+#define E1_ENABLE_PIN   25     
+
 #define TEMP_0_PIN 1  //0
-#define TEMP_1_PIN -1
+#define TEMP_1_PIN 7
 #define TEMP_2_PIN -1
 #define TEMP_BED_PIN 0  //1
 
 #define HEATER_0_PIN 4
-#define HEATER_1_PIN -1
+#define HEATER_1_PIN 13
 #define HEATER_2_PIN -1
 #define HEATER_BED_PIN 3
 
 #define KILL_PIN -1
 
 #define SDPOWER -1
-#define SDSS -1 // SCL pin of I2C header
+#define SDSS 12 // SCL pin of I2C header
 #define LED_PIN -1
 
 #define FAN_PIN 21//-1
@@ -353,11 +357,21 @@
 #define PS_ON_PIN 15
 
 //our pin for debugging.
-#define DEBUG_PIN 0
+#define DEBUG_PIN -1
 
 //our RS485 pins
 #define TX_ENABLE_PIN 12
 #define RX_ENABLE_PIN 13
+
+// OpenHardware LCD controller pins
+ //encoder "buttons" are directly attached
+#define BTN_EN1 11
+#define BTN_EN2 10
+#define BTN_ENC 12  //the click
+#define SDCARDDETECT 14
+    
+    
+
 
 #endif
 
