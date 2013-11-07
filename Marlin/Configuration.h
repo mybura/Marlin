@@ -67,7 +67,7 @@
 // and processor overload (too many expensive sqrt calls).
 //
 // 200 per second: 16MHz clock   250 per second: 20MHz clock
-#define DELTA_SEGMENTS_PER_SECOND 250
+#define DELTA_SEGMENTS_PER_SECOND 200
 
 // Center-to-center distance of the holes in the diagonal push rods.
 //#define DELTA_DIAGONAL_ROD 250.0 // mm
