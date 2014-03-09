@@ -47,7 +47,7 @@
 // 301 = Rambo
 
 #ifndef MOTHERBOARD
-#define MOTHERBOARD 131 //33
+#define MOTHERBOARD 33
 #endif
 
 //// The following define selects which power supply you have. Please choose the one that matches your setup
@@ -104,13 +104,13 @@
 
 // Length of inner support arm
 #define Linkage_1 150000 //um      Preprocessor cannot handle decimal point...
-// Length of outer support arm     Measure arm lengths precicely, and enter 
+// Length of outer support arm     Measure arm lengths precisely, and enter 
 #define Linkage_2 150000 //um      define in micrometer
 
-// SCARA tower offset (position of Tower relative to bed zero position) This do not need to be accurate
-// Homing offset calibration takes care of real homing position offset.
+// SCARA tower offset (position of Tower relative to bed zero position) 
+// This needs to be reasonably accurate as it defines the printbed position in the SCARA space.
 #define SCARA_offset_x 100 //mm   
-#define SCARA_offset_y -65 //mm
+#define SCARA_offset_y -56 //mm
 #define SCARA_RAD2DEG 57.2957795  // to convert RAD to degrees
 //#define SCARA_DEG2RAD 0.0174532
 
@@ -340,7 +340,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // For deltabots this means top and center of the cartesian print volume.
 // Scara: x centered, y 0
 #define MANUAL_X_HOME_POS -35
-#define MANUAL_Y_HOME_POS -60
+#define MANUAL_Y_HOME_POS -55
 #define MANUAL_Z_HOME_POS 235  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
@@ -387,7 +387,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller
-//#define REPRAP_DISCOUNT_SMART_CONTROLLER
+#define REPRAP_DISCOUNT_SMART_CONTROLLER
 
 // The GADGETS3D G3D LCD/SD Controller (blue PCB)
 // http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
