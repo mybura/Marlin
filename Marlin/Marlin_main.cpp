@@ -169,6 +169,8 @@ float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
 float add_homeing[3]={0,0,0};                            // Additional Homing :Theta and Psi is X and Y for SCARA
 float axis_scaling[3]={0,0,0};                                    // Build size scaling
 
+bool SoftEndsEnabled = true;
+
 float Arm_lookup[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
 bool Y_gridcal = false;                                        // Normal mode on reset.
 
@@ -1618,6 +1620,9 @@ void process_commands()
     break;
     case 500: // M500 Store settings in EEPROM
     {
+        SoftEndsEnabled = true;              // Ignore soft endstops during calibration
+      SERIAL_ECHOLN(" Soft endstops enabled ");
+      
         Config_StoreSettings();
     }
     break;
@@ -1815,6 +1820,8 @@ void process_commands()
     break;
     case 360:  // SCARA Theta pos1
       SERIAL_ECHOLN(" Cal: Theta 0 ");
+      SoftEndsEnabled = false;              // Ignore soft endstops during calibration
+      SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 0;
@@ -1830,6 +1837,8 @@ void process_commands()
     break;
     case 361:  // SCARA Theta pos2
       SERIAL_ECHOLN(" Cal: Theta 90 ");
+      SoftEndsEnabled = false;              // Ignore soft endstops during calibration
+      SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 90;
@@ -1845,6 +1854,8 @@ void process_commands()
     break;
     case 362:  // SCARA Psi pos1
       SERIAL_ECHOLN(" Cal: Psi 0 ");
+      SoftEndsEnabled = false;              // Ignore soft endstops during calibration
+      SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 60;
@@ -1860,6 +1871,8 @@ void process_commands()
     break;
     case 363:  // SCARA Psi pos2
       SERIAL_ECHOLN(" Cal: Psi 90 ");
+      SoftEndsEnabled = false;              // Ignore soft endstops during calibration
+      SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 50;
@@ -1875,6 +1888,8 @@ void process_commands()
     break;
     case 364:  // SCARA Psi pos3 (90 deg to Theta)
       SERIAL_ECHOLN(" Cal: Theta-Psi 90 ");
+      SoftEndsEnabled = false;              // Ignore soft endstops during calibration
+      SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
         //get_coordinates(); // For X Y Z E F
         delta[0] = 45;
@@ -2541,7 +2556,7 @@ void prepare_move()
   //destination[Z_AXIS]+= Arm_lookup[(int)destination[X_AXIS]/10][(int) destination[Y_AXIS]/10];
   //SERIAL_ECHOPGM("*"); SERIAL_ECHO(destination[Z_AXIS]);
   
-  clamp_to_software_endstops(destination);
+  if(SoftEndsEnabled) { clamp_to_software_endstops(destination);}    
   
   //SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
   //        SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
