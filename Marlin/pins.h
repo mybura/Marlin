@@ -380,7 +380,7 @@
 * Arduino Mega pin assignment
 *
 ****************************************************************************************/
-#if MOTHERBOARD == 3 || MOTHERBOARD == 33 || MOTHERBOARD == 34
+#if MOTHERBOARD == 3 || MOTHERBOARD == 33 || MOTHERBOARD == 34 || MOTHERBOARD == 35
 #define KNOWN_BOARD 1
 
 //////////////////FIX THIS//////////////
@@ -394,7 +394,7 @@
 // #define RAMPS_V_1_3
 // #define RAMPS_V_1_0
 
-#if MOTHERBOARD == 33 || MOTHERBOARD == 34
+#if MOTHERBOARD == 33 || MOTHERBOARD == 34 || MOTHERBOARD == 35
 
 #define X_STEP_PIN         54
 #define X_DIR_PIN          55
@@ -430,7 +430,7 @@
 #define SDSS               53
 #define LED_PIN            13
 
-#if MOTHERBOARD == 33
+#if MOTHERBOARD == 33 || MOTHERBOARD == 35
 #define FAN_PIN            9 // (Sprinter config)
 #else
 #define FAN_PIN            4 // IO pin. Buffer needed
@@ -453,9 +453,16 @@
 #define TEMP_0_PIN         13   // ANALOG NUMBERING
 #define TEMP_1_PIN         15   // ANALOG NUMBERING
 #define TEMP_2_PIN         -1   // ANALOG NUMBERING
+
+#if MOTHERBOARD == 35
+#define E0_FAN_PIN         8    // E0 Temperature controlled fan for all metal hotends
+#define HEATER_BED_PIN     -1    // BED
+#define TEMP_BED_PIN       -1   // ANALOG NUMBERING
+
+#else
 #define HEATER_BED_PIN     8    // BED
 #define TEMP_BED_PIN       14   // ANALOG NUMBERING
-
+#endif
 #ifdef ULTRA_LCD
 
   #ifdef NEWPANEL

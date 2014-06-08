@@ -29,6 +29,7 @@
 // 3  = MEGA/RAMPS up to 1.2 = 3
 // 33 = RAMPS 1.3 (Power outputs: Extruder, Bed, Fan)
 // 34 = RAMPS 1.3 (Power outputs: Extruder0, Extruder1, Bed)
+// 35 = RAMPS 1.4 (Power outputs: Extruder0, e3dFan, Fan)
 // 4  = Duemilanove w/ ATMega328P pin assignment
 // 5  = Gen6
 // 51 = Gen6 deluxe
@@ -47,7 +48,7 @@
 // 301 = Rambo
 
 #ifndef MOTHERBOARD
-#define MOTHERBOARD 33
+#define MOTHERBOARD 35
 #endif
 
 //// The following define selects which power supply you have. Please choose the one that matches your setup
@@ -110,7 +111,7 @@
 // SCARA tower offset (position of Tower relative to bed zero position) 
 // This needs to be reasonably accurate as it defines the printbed position in the SCARA space.
 #define SCARA_offset_x 100 //mm   
-#define SCARA_offset_y -56 //mm
+#define SCARA_offset_y -65 //mm
 #define SCARA_RAD2DEG 57.2957795  // to convert RAD to degrees
 //#define SCARA_DEG2RAD 0.0174532
 
@@ -147,10 +148,10 @@
 // 52 is 200k thermistor - ATC Semitec 204GT-2 (1k pullup)
 // 55 is 100k thermistor - ATC Semitec 104GT-2 (Used in ParCan) (1k pullup)
 
-#define TEMP_SENSOR_0 1
+#define TEMP_SENSOR_0 3  // E3D extruder
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
-#define TEMP_SENSOR_BED 1
+#define TEMP_SENSOR_BED 0
 
 // Actual temperature must be close to target for this long before M109 returns success
 #define TEMP_RESIDENCY_TIME 10	// (seconds)
@@ -168,9 +169,9 @@
 // When temperature exceeds max temp, your heater will be switched off.
 // This feature exists to protect your hotend from overheating accidentally, but *NOT* from thermistor short/failure!
 // You should use MINTEMP for thermistor short/failure protection.
-#define HEATER_0_MAXTEMP 275
-#define HEATER_1_MAXTEMP 275
-#define HEATER_2_MAXTEMP 275
+#define HEATER_0_MAXTEMP 300    // 300 for e3d hotend
+#define HEATER_1_MAXTEMP 300
+#define HEATER_2_MAXTEMP 300
 #define BED_MAXTEMP 150
 
 // If your bed has low resistance e.g. .6 ohm and throws the fuse you can duty cycle it to reduce the
@@ -231,9 +232,9 @@
 #ifdef PIDTEMPBED
 //120v 250W silicone heater into 4mm borosilicate (MendelMax 1.5+)
 //from FOPDT model - kp=.39 Tp=405 Tdead=66, Tc set to 79.2, argressive factor of .15 (vs .1, 1, 10)
-    #define  DEFAULT_bedKp 10.00
-    #define  DEFAULT_bedKi .023
-    #define  DEFAULT_bedKd 305.4
+    #define  DEFAULT_bedKp 243.02
+    #define  DEFAULT_bedKi 17.49
+    #define  DEFAULT_bedKd 844.09
 
 //120v 250W silicone heater into 4mm borosilicate (MendelMax 1.5+)
 //from pidautotune
@@ -305,7 +306,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define INVERT_X_DIR false    // for Mendel set to false, for Orca set to true
 #define INVERT_Y_DIR false    // for Mendel set to true, for Orca set to false
 #define INVERT_Z_DIR true    // for Mendel set to false, for Orca, Morgan set to true
-#define INVERT_E0_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
+#define INVERT_E0_DIR true   // for direct drive extruder v9 set to true, for geared extruder set to false
 #define INVERT_E1_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
 #define INVERT_E2_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
 
@@ -318,10 +319,10 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
 // Travel limits after homing
-#define X_MAX_POS 210
-#define X_MIN_POS -10
-#define Y_MAX_POS 210
-#define Y_MIN_POS -10
+#define X_MAX_POS 200
+#define X_MIN_POS 0
+#define Y_MAX_POS 200
+#define Y_MIN_POS 0
 #define Z_MAX_POS MANUAL_Z_HOME_POS
 #define Z_MIN_POS -10
 
@@ -339,9 +340,9 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Manual homing switch locations:
 // For deltabots this means top and center of the cartesian print volume.
 // Scara: x centered, y 0
-#define MANUAL_X_HOME_POS -91
-#define MANUAL_Y_HOME_POS -4.5
-#define MANUAL_Z_HOME_POS 210  // Distance between nozzle and print surface after homing.
+#define MANUAL_X_HOME_POS -8
+#define MANUAL_Y_HOME_POS -44
+#define MANUAL_Z_HOME_POS 220  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
@@ -350,9 +351,9 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // default settings 
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {215, 215, 100, 450}
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {215, 215, 105, 101}
 #define DEFAULT_MAX_FEEDRATE          {300, 300, 300, 45}  // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {400, 400, 400, 8000}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_MAX_ACCELERATION      {150, 150, 50, 8000}    // X, Y, Z, E maximum start speed for accelerated moves.
 
 #define DEFAULT_ACCELERATION          9000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
@@ -378,16 +379,16 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define EEPROM_CHITCHAT
 
 //LCD and SD support
-//#define ULTRA_LCD  //general lcd support, also 16x2
+#define ULTRA_LCD  //general lcd support, also 16x2
 //#define SDSUPPORT // Enable SD Card Support in Hardware Console
 
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
 
-//#define ULTIPANEL  //the ultipanel as on thingiverse
+#define ULTIPANEL  //the ultipanel as on thingiverse
 
 // The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller
-#define REPRAP_DISCOUNT_SMART_CONTROLLER
+//#define REPRAP_DISCOUNT_SMART_CONTROLLER
 
 // The GADGETS3D G3D LCD/SD Controller (blue PCB)
 // http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel

@@ -376,6 +376,14 @@ void manage_heater()
     else {
       soft_pwm[e] = 0;
     }
+    
+    if(current_temperature[e] > 40)
+    {
+        WRITE(E0_FAN_PIN,HIGH);
+    }
+    else {
+        WRITE(E0_FAN_PIN,LOW);
+    }
 
     #ifdef WATCH_TEMP_PERIOD
     if(watchmillis[e] && millis() - watchmillis[e] > WATCH_TEMP_PERIOD)
@@ -454,6 +462,7 @@ void manage_heater()
       // Check if temperature is within the correct band
       if((current_temperature_bed > BED_MINTEMP) && (current_temperature_bed < BED_MAXTEMP))
       {
+        
         if(current_temperature_bed > target_temperature_bed + BED_HYSTERESIS)
         {
           soft_pwm_bed = 0;
