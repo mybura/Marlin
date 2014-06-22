@@ -40,6 +40,8 @@
 #include "language.h"
 #include "pins_arduino.h"
 
+#include "new_mathematics.h"
+
 #if DIGIPOTSS_PIN > -1
 #include <SPI.h>
 #endif
@@ -1361,15 +1363,15 @@ void process_commands()
       SERIAL_PROTOCOLLN("");
       
       SERIAL_PROTOCOLPGM("SCARA Cal - Theta:");
-      SERIAL_PROTOCOL(delta[X_AXIS]+add_homeing[0]);
+      SERIAL_PROTOCOL_F(delta[X_AXIS]+add_homeing[0],3);
       SERIAL_PROTOCOLPGM("   Psi+Theta (90):");
-      SERIAL_PROTOCOL(delta[Y_AXIS]-delta[X_AXIS]-90+add_homeing[1]);
+      SERIAL_PROTOCOL_F(delta[Y_AXIS]-delta[X_AXIS]-90+add_homeing[1],3);
       SERIAL_PROTOCOLLN("");
       
       SERIAL_PROTOCOLPGM("SCARA step Cal - Theta:");
-      SERIAL_PROTOCOL(delta[X_AXIS]/90*axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOL_F(delta[X_AXIS]/90*axis_steps_per_unit[X_AXIS],3);
       SERIAL_PROTOCOLPGM("   Psi+Theta:");
-      SERIAL_PROTOCOL((delta[Y_AXIS]-delta[X_AXIS])/90*axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOL_F((delta[Y_AXIS]-delta[X_AXIS])/90*axis_steps_per_unit[Y_AXIS],3);
       SERIAL_PROTOCOLLN("");
       SERIAL_PROTOCOLLN("");
       
@@ -2118,7 +2120,8 @@ void process_commands()
     break;
     */
    
-      
+    
+   
     case 999: // M999: Restart after being stopped
       Stopped = false;
       lcd_reset_alert_level();
@@ -2429,7 +2432,7 @@ void calculate_forward(float f_delta[3])
   //SERIAL_ECHOPGM(" y1="); SERIAL_ECHO(y1);
   //SERIAL_ECHOPGM(" y2="); SERIAL_ECHOLN(y2);
   
-  
+  SERIAL_ECHOLN("*");
   delta[X_AXIS] = cos(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1/1000 + cos(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2/1000 + SCARA_offset_x;
   delta[Y_AXIS] = y2 + SCARA_offset_y;
    
@@ -2459,12 +2462,12 @@ void calculate_delta(float cartesian[3])
   SCARA_pos[Y_AXIS] = cartesian[Y_AXIS] * axis_scaling[Y_AXIS] - SCARA_offset_y;  // With scaling factor.
   
   #if (Linkage_1 == Linkage_2)
-    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-2*pow(Linkage_1/1000,2)) / (2 * pow(Linkage_1/1000,2));
+    SCARA_C2 = (square(SCARA_pos[X_AXIS])+square(SCARA_pos[Y_AXIS])-2*square(Linkage_1/1000)) / (2 * square(Linkage_1/1000));
   #else
-    SCARA_C2 = (pow(SCARA_pos[X_AXIS],2)+pow(SCARA_pos[Y_AXIS],2)-pow(Linkage_1/1000,2)-pow(Linkage_2/1000,2)) / 45000; 
+    SCARA_C2 = (square(SCARA_pos[X_AXIS])+square(SCARA_pos[Y_AXIS])-square(Linkage_1/1000)-square(Linkage_2/1000)) / 45000; 
   #endif
   
-  SCARA_S2 = sqrt(1-pow(SCARA_C2,2));
+  SCARA_S2 = fsqrt(1-square(SCARA_C2));
   
   SCARA_K1 = Linkage_1/1000+Linkage_2/1000*SCARA_C2;
   SCARA_K2 = Linkage_2/1000*SCARA_S2;
@@ -2486,7 +2489,12 @@ void calculate_delta(float cartesian[3])
   //SERIAL_ECHOLN(calc_bed_delta(cartesian));
   //SERIAL_ECHOLN(" ");
   
-  
+  //SERIAL_ECHOPGM("SCARA_psi: atan="); SERIAL_ECHO(atan2(SCARA_S2,SCARA_C2));
+  //SERIAL_ECHOPGM("   fatan="); SERIAL_ECHO(fatan2(SCARA_S2,SCARA_C2));
+  //SERIAL_ECHOLN(" ");
+  //SERIAL_ECHOPGM("SCARA_S2: sqrt="); SERIAL_PROTOCOL_F(SCARA_S2,6);
+  //SERIAL_ECHOPGM("   fsqrt="); SERIAL_PROTOCOL_F(fsqrt(1-square(SCARA_C2)),6);
+  //SERIAL_ECHOLN(" ");
   /*
   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(cartesian[X_AXIS]);
   SERIAL_ECHOPGM(" y="); SERIAL_ECHO(cartesian[Y_AXIS]);

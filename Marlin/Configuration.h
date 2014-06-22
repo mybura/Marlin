@@ -67,7 +67,7 @@
 // and processor overload (too many expensive sqrt calls).
 //
 // 200 per second: 16MHz clock   250 per second: 20MHz clock
-#define DELTA_SEGMENTS_PER_SECOND 200
+#define DELTA_SEGMENTS_PER_SECOND 25
 
 // Center-to-center distance of the holes in the diagonal push rods.
 //#define DELTA_DIAGONAL_ROD 250.0 // mm
@@ -86,7 +86,7 @@
 
 // Effective X/Y positions of the three vertical towers.
 //#define SIN_60 0.8660254037844386
-//#define COS_60 0.5
+//#define COS_60 0.5k
 //#define DELTA_TOWER1_X -SIN_60*DELTA_RADIUS // front left tower
 //#define DELTA_TOWER1_Y -COS_60*DELTA_RADIUS
 //#define DELTA_TOWER2_X SIN_60*DELTA_RADIUS // front right tower
@@ -110,7 +110,7 @@
 // SCARA tower offset (position of Tower relative to bed zero position) 
 // This needs to be reasonably accurate as it defines the printbed position in the SCARA space.
 #define SCARA_offset_x 100 //mm   
-#define SCARA_offset_y -56 //mm
+#define SCARA_offset_y -65 //mm
 #define SCARA_RAD2DEG 57.2957795  // to convert RAD to degrees
 //#define SCARA_DEG2RAD 0.0174532
 
@@ -339,8 +339,8 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Manual homing switch locations:
 // For deltabots this means top and center of the cartesian print volume.
 // Scara: x centered, y 0
-#define MANUAL_X_HOME_POS -91
-#define MANUAL_Y_HOME_POS -4.5
+#define MANUAL_X_HOME_POS 35
+#define MANUAL_Y_HOME_POS -73
 #define MANUAL_Z_HOME_POS 210  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
@@ -387,7 +387,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller
-#define REPRAP_DISCOUNT_SMART_CONTROLLER
+//#define REPRAP_DISCOUNT_SMART_CONTROLLER
 
 // The GADGETS3D G3D LCD/SD Controller (blue PCB)
 // http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
