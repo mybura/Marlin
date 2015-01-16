@@ -103,16 +103,12 @@
 #define MORGAN_SCARA  
 
 // Length of arms
-                            //        Measure arm lengths precisely, and enter 
+// Measure arm lengths precisely and enter. Length is the distance from the centre axis of the bearing on either side
+// of each arm to the other side.
 #define LengthTheta 150250.0/1000    //um      Preprocessor cannot handle decimal point...
 #define LengthPsi   151500.0/1000    //um      define in micrometer and leave the / 1000 for the compiler to sort out
 #define LengthThetaExt 150750.0/1000 //um      
 #define LengthPsiExt   158750.0/1000 //um      
-//#define LengthTheta 148575.0/1000    //um      Preprocessor cannot handle decimal point...
-//#define LengthPsi   150400.0/1000    //um      define in micrometer and leave the / 1000 for the compiler to sort out
-//#define LengthThetaExt 150900.0/1000 //um      
-//#define LengthPsiExt   159700.0/1000 //um      
-  
 
 // SCARA tower offset (position of Tower relative to bed zero position) 
 // This needs to be reasonably accurate as it defines the printbed position in the SCARA space.
@@ -360,7 +356,6 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define MANUAL_X_HOME_POS -104                 // CHANGE ANYTHING HERE RECALIBRATION IS NEEDED VIA M360 process
 #define MANUAL_Y_HOME_POS -3
 #define MANUAL_Z_HOME_POS 0  // Distance between nozzle and print surface after homing.
-// #define MANUAL_Z_HOME_POS 248  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E

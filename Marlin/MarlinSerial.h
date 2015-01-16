@@ -64,6 +64,7 @@
 #define BIN 2
 #define BYTE 0
 
+#define FLOAT_PRINTED_DIGITS 4
 
 #ifndef AT90USB
 // Define constants and variables for buffering incoming serial data.  We're
@@ -164,7 +165,7 @@ class MarlinSerial //: public Stream
     void print(unsigned int, int = DEC);
     void print(long, int = DEC);
     void print(unsigned long, int = DEC);
-    void print(double, int = 4);
+    void print(double, int = FLOAT_PRINTED_DIGITS);
 
     void println(const String &s);
     void println(const char[]);
@@ -174,7 +175,7 @@ class MarlinSerial //: public Stream
     void println(unsigned int, int = DEC);
     void println(long, int = DEC);
     void println(unsigned long, int = DEC);
-    void println(double, int = 4);
+    void println(double, int = FLOAT_PRINTED_DIGITS);
     void println(void);
 };
 

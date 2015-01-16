@@ -204,7 +204,7 @@ static bool home_XY = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
 static long gcode_N, gcode_LastN, Stopped_gcode_LastN = 0;
 
-static float SCARA_C2, SCARA_S2, SCARA_K1, SCARA_K2, SCARA_theta, SCARA_psi, dCal_X = 0, dCal_Y = 0;
+static float SCARA_C2, SCARA_S2, SCARA_K1, SCARA_K2, SCARA_theta, SCARA_psi, dCal_X = 0, dCal_Y = 0, dCal_X_Inv = 0, dCal_Y_Inv = 0;
 //static float Grid_temp[X_ARMLOOKUP_LENGTH][Y_ARMLOOKUP_LENGTH];
 
 static bool relative_mode = false;  //Determines Absolute or Relative Coordinates
@@ -659,11 +659,6 @@ static void axis_is_at_home(int axis) {
      //SERIAL_ECHOPGM("base Theta="); SERIAL_ECHO(delta[X_AXIS]);
      //SERIAL_ECHOPGM("   base Psi+Theta="); SERIAL_ECHOLN(delta[Y_AXIS]);
      
-    // for (i=0; i<2; i++)
-    // {
-    //    delta[i] -= add_homeing[i];
-    // } 
-     
      //SERIAL_ECHOPGM("addhome X="); SERIAL_ECHO(add_homeing[X_AXIS]);
      //SERIAL_ECHOPGM("addhome Theta="); SERIAL_ECHO(delta[X_AXIS]);
      //SERIAL_ECHOPGM("   addhome Psi+Theta="); SERIAL_ECHOLN(delta[Y_AXIS]);
@@ -733,6 +728,7 @@ static void homeaxis(int axis) {
 }
 #define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
 
+// Physcially moves the extruder on the given axis by incrementing with the given delta
 void advance_axis (int axis, float delta_to_add)
 {
     current_position[axis] = 0;
@@ -830,7 +826,7 @@ void process_commands()
       break;
       #endif //FWRETRACT
     case 28: //G28 Home all Axis one at a time 
-      //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
+
       // Get the head away from the bed/printed object before we zero to home
       advance_axis(Z_AXIS,5);
   
@@ -840,7 +836,9 @@ void process_commands()
       previous_millis_cmd = millis();
       
       dCal_X = X_MAX_POS/GCal_X;                   // Initialise dCal_X & dCal_Y
+      dCal_X_Inv = 1.0/dCal_X;
       dCal_Y = Y_MAX_POS/GCal_Y;
+      dCal_Y_Inv = 1.0/dCal_Y;
       
       enable_endstops(true);
       
@@ -921,7 +919,11 @@ void process_commands()
       previous_millis_cmd = millis();
       endstops_hit_on_purpose();
       
-      // Move to a safe starting position
+      // Move to a safe starting position. Using physical switches as endstops on 
+      // the Morgan wheel prevents the extruder from moving in a certain area infront 
+      // of the main axes assembly. Move the head to a position well away from this 
+      // deadzone or run the risk of bashing the switches trying to reach an interim 
+      // position
       #if defined(SCARA_home_safe_starting_x) && defined(SCARA_home_safe_starting_y)
         feedmultiply = 100;
         feedrate = homing_feedrate[X_AXIS];;
@@ -1375,14 +1377,7 @@ void process_commands()
       SERIAL_PROTOCOL(current_position[Z_AXIS]);
       SERIAL_PROTOCOLPGM("E:");      
       SERIAL_PROTOCOL(current_position[E_AXIS]);
-      
-      //SERIAL_PROTOCOLPGM(MSG_COUNT_X);
-      //SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      //SERIAL_PROTOCOLPGM("Y:");
-      //SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      //SERIAL_PROTOCOLPGM("Z:");
-      //SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-      
+
       SERIAL_PROTOCOLLN("");
       SERIAL_PROTOCOLPGM("SCARA Theta:");
       SERIAL_PROTOCOL(delta[X_AXIS]+add_homeing[0]);
@@ -1853,15 +1848,14 @@ void process_commands()
       SoftEndsEnabled = false;              // Ignore soft endstops during calibration
       SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
-        //get_coordinates(); // For X Y Z E F
-        delta[0] = 0;
-        delta[1] = 120;
+
+        delta[0] = 0;			// Move Theta to 0 degrees (arm pointing west if you are looking at the printer with the bed between you and the z-axis motor)
+        delta[1] = 120;			// Move Psi to 120 degrees 
         calculate_forward(delta);
-        destination[0] = delta[0]*axis_scaling[X_AXIS];
-        destination[1] = delta[1]*axis_scaling[Y_AXIS];
+        destination[0] = delta[0];
+        destination[1] = delta[1];
         
         prepare_move();
-        //ClearToSend();
         return;
       }
     break;
@@ -1874,8 +1868,8 @@ void process_commands()
         delta[0] = 90;
         delta[1] = 130;
         calculate_forward(delta);
-        destination[0] = delta[0]*axis_scaling[X_AXIS];
-        destination[1] = delta[1]*axis_scaling[Y_AXIS];
+        destination[0] = delta[0];
+        destination[1] = delta[1];
         
         prepare_move();
         //ClearToSend();
@@ -1891,8 +1885,8 @@ void process_commands()
         delta[0] = 60;
         delta[1] = 180;
         calculate_forward(delta);
-        destination[0] = delta[0]*axis_scaling[X_AXIS];
-        destination[1] = delta[1]*axis_scaling[Y_AXIS];
+        destination[0] = delta[0];
+        destination[1] = delta[1];
         
         prepare_move();
         //ClearToSend();
@@ -1908,8 +1902,8 @@ void process_commands()
         delta[0] = 50;
         delta[1] = 90;
         calculate_forward(delta);
-        destination[0] = delta[0]*axis_scaling[X_AXIS];
-        destination[1] = delta[1]*axis_scaling[Y_AXIS];
+        destination[0] = delta[0];
+        destination[1] = delta[1];
         
         prepare_move();
         //ClearToSend();
@@ -1925,8 +1919,8 @@ void process_commands()
         delta[0] = 45;
         delta[1] = 135;
         calculate_forward(delta);
-        destination[0] = delta[0]*axis_scaling[X_AXIS];
-        destination[1] = delta[1]*axis_scaling[Y_AXIS]; 
+        destination[0] = delta[0];
+        destination[1] = delta[1]; 
         
         prepare_move();
         //ClearToSend();
@@ -1953,11 +1947,10 @@ void process_commands()
         delta[0] = destination[0];
         delta[1] = destination[1];
         calculate_forward(delta);
-        destination[0] = delta[0]*axis_scaling[X_AXIS];
-        destination[1] = delta[1]*axis_scaling[Y_AXIS];
+        destination[0] = delta[0];
+        destination[1] = delta[1];
         
         prepare_move();
-        //ClearToSend();
         return;
       }
     break;
@@ -1970,8 +1963,10 @@ void process_commands()
 
       GPos_X = 0;
       GPos_Y = 0;
-      dCal_X = X_MAX_POS/GCal_X;                   // Initialise dCal_X & dCal_Y
-      dCal_Y = Y_MAX_POS/GCal_Y;
+      dCal_X = X_MAX_POS / GCal_X;                   // Initialise dCal_X & dCal_Y
+      dCal_X_Inv = 1.0 / dCal_X;
+      dCal_Y = Y_MAX_POS / GCal_Y;
+      dCal_Y_Inv = 1.0 / dCal_Y;
       
       for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
       {
@@ -2069,112 +2064,6 @@ void process_commands()
   
     break;  
     
-    /*
-    case 374:    // Automatic Bed sensing - experimental, and currently broken by other changes
-    
-      //SERIAL_ECHO(" Z-min Pin:");
-      //    SERIAL_ECHOLN(digitalRead(Z_MIN_PIN));
-    
-      if(Y_gridcal){// && digitalRead(Z_MIN_PIN)){
-        
-        
-      
-        for (counterx = 0; counterx <= X_MAX_POS; counterx += 50)
-        {
-          for (countery = 0; countery <= Y_MAX_POS; countery += 50)
-          {
-          
-      
-            
-          
-    //counterx = 100;
-    //countery = 100;
-          
-          destination[X_AXIS] = counterx;
-          destination[Y_AXIS] = countery;
-          destination[Z_AXIS] = 20;
-          feedrate = 5000;
-          
-          prepare_move();
-          //plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-          st_synchronize();
-          
-          //enable_endstops(true);
-          destination[Z_AXIS] = -10;
-          feedrate = 500;
-          calculate_delta(destination);
-          SERIAL_ECHO(" Z-dest:");
-          SERIAL_ECHOLN(destination[Z_AXIS]);
-          
-          bool z_min_endstop= false;
-          for (delta[Z_AXIS] = current_position[Z_AXIS]; (delta[Z_AXIS] >= destination[Z_AXIS]) && z_min_endstop==false; delta[Z_AXIS] -= 0.01){
-              //z_min_endstop=(READ(Z_MIN_PIN) != Z_ENDSTOPS_INVERTING);
-              plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);   // Single move...
-              //if (z_min_endstop){
-               // SERIAL_ECHO("1");
-              //}  
-              //else
-              // {
-              //   SERIAL_ECHO("0");
-              // }
-              st_synchronize();
-              z_min_endstop=(READ(Z_MIN_PIN) != Z_ENDSTOPS_INVERTING);
-              
-          }
-          
-          //prepare_move();
-          //st_synchronize();
-          //endstops_hit_on_purpose();
-          //checkHitEndstops();
-          
-          //Z_endstop_value(destination[Z_AXIS]);
-          
-          //current_position[Z_AXIS] = Z_endstop_value(destination[Z_AXIS]);
-          Arm_lookup[(int)current_position[X_AXIS]/10 +1][(int)current_position[Y_AXIS]/10 +1] = delta[Z_AXIS];
-          
-          //#ifdef ENDSTOPS_ONLY_FOR_HOMING
-           // enable_endstops(false);
-          //#endif
-          
-          //Arm_lookup[(int)current_position[X_AXIS]/10 +1][(int)current_position[Y_AXIS]/10 +1] = current_position[Z_AXIS];
-          SERIAL_ECHO(" Z-off:");
-          SERIAL_ECHOLN(offset[Z_AXIS]);
-          
-          SERIAL_ECHO(" Z-delta:");
-          SERIAL_ECHOLN(delta[Z_AXIS]);
-          SERIAL_ECHO(" Z-cur:");
-          SERIAL_ECHOLN(current_position[Z_AXIS]);
-          SERIAL_ECHOLN(" ");
-          
-          //codenum += millis();  // keep track of when we started waiting
-          //previous_millis_cmd = millis();
-          //while(millis()  < codenum ){
-           // manage_heater();
-           // manage_inactivity();
-           // lcd_update();
-          //}
-          //endstops_hit_on_purpose();
-       
-     
-          }
-       }
-        
-          // Go to Park after last calibration position
-          destination[X_AXIS] = 0;
-          destination[Y_AXIS] = 100;
-          destination[Z_AXIS] = 20;
-          feedrate = 5000;
-          
-          prepare_move();
-          //plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
-          st_synchronize();
-      
-      
-      }
-    
-    break;
-    */
-   
       
     case 999: // M999: Restart after being stopped
       Stopped = false;
@@ -2478,76 +2367,40 @@ void calculate_forward(float f_delta[3])
   
   float rho, D, C1, P1, B2, C2, s, p;
   
-  //SERIAL_ECHOPGM("Forward Angles f_delta x="); SERIAL_ECHO(f_delta[X_AXIS]);
- // SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(f_delta[Y_AXIS]);
-  
-  // delta[X_AXIS] is X coordinate
-  // delta[Y_AXIS] is Y Coordinate
-
-  // Cater for homing adjustment
-  //f_delta[0] -= add_homeing[0];
-  //f_delta[1] -= add_homeing[1];
-
   s = sqrt(sqr(LengthTheta) + sqr(LengthPsi) - 2 * LengthTheta * LengthPsi * cos(RADIANS(f_delta[Y_AXIS] - f_delta[X_AXIS])));
-  C2 = acos((sqr(LengthPsiExt) - sqr(s) - sqr(LengthThetaExt)) / (-2 * s * LengthThetaExt));
-  B2 = acos((sqr(LengthPsi) - sqr(s) - sqr(LengthTheta)) / (-2 * s * LengthTheta));
+
+  float sSquared = sqr(s);  C2 = acos((sqr(LengthPsiExt) - sSquared - sqr(LengthThetaExt)) / (-2 * s * LengthThetaExt));
+  B2 = acos((sqr(LengthPsi) - sSquared - sqr(LengthTheta)) / (-2 * s * LengthTheta));
   P1 = B2 + C2;
   p = sqrt(sqr(LengthTheta) + sqr(LengthThetaExt) - 2 * LengthTheta * LengthThetaExt * cos(P1));
   D = acos((sqr(LengthThetaExt) - sqr(LengthTheta) - sqr(p)) / (-2 * LengthTheta * p));
-  
-//  y1 = sin(f_delta[X_AXIS]/SCARA_RAD2DEG)*Linkage_1/1000;
-//  y2 = sin(f_delta[Y_AXIS]/SCARA_RAD2DEG)*Linkage_2/1000 + y1;
-  
-  //SERIAL_ECHOPGM(" y1="); SERIAL_ECHO(y1);
-  //SERIAL_ECHOPGM(" y2="); SERIAL_ECHOLN(y2);
   
   // f_delta[X_AXIS] is Theta angle
   // f_delta[Y_AXIS] is Psi angle
   rho = RADIANS(f_delta[X_AXIS]) + D;
 
-/*
-  SERIAL_ECHOPGM("Forward s="); SERIAL_ECHO(s);
-  SERIAL_ECHOPGM(" C2="); SERIAL_ECHO(C2);
-  SERIAL_ECHOPGM(" B2="); SERIAL_ECHO(B2);
-  SERIAL_ECHOPGM(" P1="); SERIAL_ECHO(P1);
-  SERIAL_ECHOPGM(" p="); SERIAL_ECHO(p);
-  SERIAL_ECHOPGM(" D="); SERIAL_ECHO(D);
-  SERIAL_ECHOPGM(" rho="); SERIAL_ECHOLN(rho);
-*/  
   delta[X_AXIS] = p * cos(rho) + SCARA_offset_x;  
   delta[Y_AXIS] = p * sin(rho) + SCARA_offset_y;  
-
-  //SERIAL_ECHOPGM("Forward delta x="); SERIAL_ECHO(delta[X_AXIS]);
- // SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(delta[Y_AXIS]);
 }  
 
-#define MAX_THETA 150
+// Soft endstops on theta and psi
+#define MAX_THETA 150		
 #define MIN_THETA -50
 #define MAX_PSI 245
 #define MIN_PSI -30
-#define SMALLEST_DIFFERENCE_ANGLE 30
+#define SMALLEST_DIFFERENCE_ANGLE 30	// Smallest angle between psi and theta
 
 void calculate_delta(float cartesian[3])
 {
+  // TODO Add scaling using axis_scaling[X_AXIS] and axis_scaling[Y_AXIS] to input on values to move commands (get_coordinates and all other functions manipulting destination)
   
   // SCARA "X" = theta
   // SCARA "Y" = psi+theta, motor movement inverted.
-  //static float SCARA_C2, SCARA_S2, SCARA_theta, SCARA_psi  - Defined above...
 
-  // Length of inner support arm
-  //#define Linkage_1 150 //mm
-
-  // Length of outer support arm
-  //#define Linkage_2 150 //mm
-
-  // SCARA tower offset (position of Tower relative to bed position)
-  //#define SCARA_offset_x 100 //mm   
-  //#define SCARA_offset_y -60 //mm
-  // SCARA position always in relation to the tower base
   float SCARA_pos[2], D, C1, p, rho, cos_rho;
   
-  SCARA_pos[X_AXIS] = (cartesian[X_AXIS] * axis_scaling[X_AXIS] - SCARA_offset_x);  // Translate SCARA to standard X Y
-  SCARA_pos[Y_AXIS] = (cartesian[Y_AXIS] * axis_scaling[Y_AXIS] - SCARA_offset_y);  // With scaling factor.
+  SCARA_pos[X_AXIS] = (cartesian[X_AXIS] - SCARA_offset_x);  // Translate SCARA to standard X Y
+  SCARA_pos[Y_AXIS] = (cartesian[Y_AXIS] - SCARA_offset_y); 
   
   rho = atan2(SCARA_pos[Y_AXIS], SCARA_pos[X_AXIS]);
   
@@ -2558,8 +2411,9 @@ void calculate_delta(float cartesian[3])
   else
     p = SCARA_pos[X_AXIS]/cos_rho;
   
-  D = acos((sqr(LengthThetaExt) - sqr(LengthTheta) - sqr(p)) / (-2 * LengthTheta * p));
-  C1 = acos((sqr(LengthPsiExt) - sqr(LengthPsi) - sqr(p)) / (-2 * LengthPsi * p));
+  float pSquared = sqr(p);
+  D = acos((sqr(LengthThetaExt) - sqr(LengthTheta) - pSquared) / (-2 * LengthTheta * p));
+  C1 = acos((sqr(LengthPsiExt) - sqr(LengthPsi) - pSquared) / (-2 * LengthPsi * p));
   
   SCARA_theta = (rho - D) * SCARA_RAD2DEG - add_homeing[0];    // Convert to Angle in Degrees 
   SCARA_psi = (rho + C1) * SCARA_RAD2DEG - add_homeing[1];     // Convert to Angle in Degrees 
@@ -2603,9 +2457,6 @@ void calculate_delta(float cartesian[3])
   {
     delta[Z_AXIS] = cartesian[Z_AXIS] + calc_bed_delta(cartesian);
   }
-  //SERIAL_ECHOLN(calc_bed_delta(cartesian));
-  //SERIAL_ECHOLN(" ");
-  
   
   /*
   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(cartesian[X_AXIS]);
@@ -2624,8 +2475,6 @@ void calculate_delta(float cartesian[3])
   SERIAL_ECHOPGM(" D="); SERIAL_ECHO(D);
   SERIAL_ECHOPGM(" C1="); SERIAL_ECHOLN(C1);
   
-//  SERIAL_ECHOPGM("C2="); SERIAL_ECHO(SCARA_C2);
-//  SERIAL_ECHOPGM(" S2="); SERIAL_ECHO(SCARA_S2);
   SERIAL_ECHOPGM(" Theta="); SERIAL_ECHO(SCARA_theta * SCARA_RAD2DEG);
   SERIAL_ECHOPGM(" Psi="); SERIAL_ECHOLN(SCARA_psi * SCARA_RAD2DEG);
   SERIAL_ECHOLN(" ");
@@ -2639,16 +2488,19 @@ int CartX, CartY;
 
 float calc_bed_delta(float cartesian[3])
 {
-  if (cartesian[X_AXIS] < X_MIN_POS || cartesian[Y_AXIS] < Y_MIN_POS || cartesian[X_AXIS] > X_MAX_POS || cartesian[Y_AXIS] > Y_MAX_POS)    // Not within grid range!
+  if (cartesian[X_AXIS] < X_MIN_POS || 
+      cartesian[Y_AXIS] < Y_MIN_POS || 
+      cartesian[X_AXIS] > X_MAX_POS || 
+      cartesian[Y_AXIS] > Y_MAX_POS)    // Not within grid range!
   {
      return 0; 
   }  
   
-  CartX = cartesian[X_AXIS]/dCal_X;                  // Get the current sector (X)
-  fCartX = ((int)cartesian[X_AXIS]/dCal_X) - CartX;  // Find floating point
+  CartX = cartesian[X_AXIS] * dCal_X_Inv;                  // Get the current sector (X)
+  fCartX = ((int)cartesian[X_AXIS] * dCal_X_Inv) - CartX;                           // Find floating point
 
-  CartY = cartesian[Y_AXIS]/dCal_Y;                  // Get the current sector (Y)
-  fCartY = ((int)cartesian[Y_AXIS]/dCal_Y) - CartY;  // Find floating point
+  CartY = cartesian[Y_AXIS] * dCal_Y_Inv;                  // Get the current sector (Y)
+  fCartY = ((int)cartesian[Y_AXIS] * dCal_Y_Inv) - CartY;                           // Find floating point
   
   dCartX1 = (1-fCartX) * Arm_lookup[CartX][CartY] + (fCartX) * Arm_lookup[CartX+1][CartY];
   dCartX2 = (1-fCartX) * Arm_lookup[CartX][CartY+1] + (fCartX) * Arm_lookup[CartX+1][CartY+1];
@@ -2668,9 +2520,7 @@ float calc_bed_delta(float cartesian[3])
   // ********************************************************************
   
   */
-  return fCartY * dCartX2 + (1-fCartY) * dCartX1;    // Calculated Z-delta  
-
-  
+  return fCartY * dCartX2 + (1-fCartY) * dCartX1;    // Calculated Z-delta   
 }
 
 
@@ -2703,8 +2553,9 @@ void prepare_move()
   // SERIAL_ECHOPGM("mm="); SERIAL_ECHO(cartesian_mm);
   // SERIAL_ECHOPGM(" seconds="); SERIAL_ECHO(seconds);
   // SERIAL_ECHOPGM(" steps="); SERIAL_ECHOLN(steps);
+  float fraction_steps = 1.0 / float(steps);
+  float fraction = fraction_steps;
   for (int s = 1; s <= steps; s++) {
-    float fraction = float(s) / float(steps);
     for(int8_t i=0; i < NUM_AXIS; i++) {
       destination[i] = current_position[i] + difference[i] * fraction;
     }
@@ -2716,6 +2567,8 @@ void prepare_move()
     plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
                      destination[E_AXIS], feedrate*feedmultiply/60/100.0,
                      active_extruder);
+
+    fraction += fraction_steps;
   }
   
    
