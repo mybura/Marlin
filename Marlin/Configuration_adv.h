@@ -79,6 +79,7 @@
 #define EXTRUDERS 1
 
 #define ENDSTOPS_ONLY_FOR_HOMING // If defined the endstops will only be used for homing
+//#define ALWAYS_USE_XY_ENDSTOPS     // If defined,  ENDSTOPS_ONLY_FOR_HOMING will be ignored or X and Y endstops
 
 
 //// AUTOSET LOCATIONS OF LIMIT SWITCHES
@@ -174,7 +175,7 @@
 // Frequency limit
 // See nophead's blog for more info
 // Not working O
-//#define XY_FREQUENCY_LIMIT  15
+//#define XY_FREQUENCY_LIMIT  17
 
 // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
 // of the buffer and all stops. This should not be much greater than zero and should only be changed

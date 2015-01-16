@@ -164,7 +164,7 @@ class MarlinSerial //: public Stream
     void print(unsigned int, int = DEC);
     void print(long, int = DEC);
     void print(unsigned long, int = DEC);
-    void print(double, int = 2);
+    void print(double, int = 4);
 
     void println(const String &s);
     void println(const char[]);
@@ -174,7 +174,7 @@ class MarlinSerial //: public Stream
     void println(unsigned int, int = DEC);
     void println(long, int = DEC);
     void println(unsigned long, int = DEC);
-    void println(double, int = 2);
+    void println(double, int = 4);
     void println(void);
 };
 

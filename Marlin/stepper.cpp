@@ -76,6 +76,7 @@ static bool old_z_min_endstop=false;
 static bool old_z_max_endstop=false;
 
 static bool check_endstops = true;
+static bool ignore_check_Z_endstops = true;
 
 volatile long count_position[NUM_AXIS] = { 0, 0, 0, 0};
 volatile signed char count_direction[NUM_AXIS] = { 1, 1, 1, 1};
@@ -330,7 +331,11 @@ ISR(TIMER1_COMPA_vect)
         WRITE(X_DIR_PIN, INVERT_X_DIR);
       #endif
       count_direction[X_AXIS]=-1;
-      CHECK_ENDSTOPS
+      
+      #if defined ALWAYS_USE_XY_ENDSTOPS
+      #else
+        CHECK_ENDSTOPS
+      #endif      
       {
         #if X_MIN_PIN > -1
           bool x_min_endstop=(READ(X_MIN_PIN) != X_ENDSTOPS_INVERTING);
@@ -349,7 +354,10 @@ ISR(TIMER1_COMPA_vect)
       #endif
       
       count_direction[X_AXIS]=1;
-      CHECK_ENDSTOPS 
+      #if defined ALWAYS_USE_XY_ENDSTOPS
+      #else
+        CHECK_ENDSTOPS
+      #endif      
       {
         #if X_MAX_PIN > -1
           bool x_max_endstop=(READ(X_MAX_PIN) != X_ENDSTOPS_INVERTING);
@@ -368,7 +376,10 @@ ISR(TIMER1_COMPA_vect)
         WRITE(Y_DIR_PIN,INVERT_Y_DIR);
       #endif
       count_direction[Y_AXIS]=-1;
-      CHECK_ENDSTOPS
+      #if defined ALWAYS_USE_XY_ENDSTOPS
+      #else
+        CHECK_ENDSTOPS
+      #endif      
       {
         #if Y_MIN_PIN > -1
           bool y_min_endstop=(READ(Y_MIN_PIN) != Y_ENDSTOPS_INVERTING);
@@ -386,7 +397,11 @@ ISR(TIMER1_COMPA_vect)
         WRITE(Y_DIR_PIN,!INVERT_Y_DIR);
       #endif
       count_direction[Y_AXIS]=1;
-      CHECK_ENDSTOPS
+
+      #if defined ALWAYS_USE_XY_ENDSTOPS
+      #else
+        CHECK_ENDSTOPS
+      #endif      
       {
         #if Y_MAX_PIN > -1
           bool y_max_endstop=(READ(Y_MAX_PIN) != Y_ENDSTOPS_INVERTING);
