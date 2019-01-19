@@ -887,7 +887,13 @@ void lcd_buttons_update()
 char conv[8];
 char *ftostr3(const float &x)
 {
-  return itostr3((int)x);
+  int xx=x*10;
+  conv[0]=(xx>=0)?'+':'-';
+  conv[1]=(xx/1000)%10+'0';
+  conv[2]=(xx/100)%10+'0';
+  conv[3]=(xx/10)%10+'0';
+  conv[4]=0;
+  return conv;
 }
 
 char *itostr2(const uint8_t &x)

@@ -156,7 +156,7 @@ enum AxisEnum {X_AXIS=0, Y_AXIS=1, Z_AXIS=2, E_AXIS=3};
 void FlushSerialRequestResend();
 void ClearToSend();
 
-void get_coordinates();
+void get_coordinates(bool apply_scaling=true);
 void calculate_delta(float cartesian[3]);
 void calculate_forward(float f_delta[3]);
 void prepare_move();
@@ -187,7 +187,7 @@ extern bool axis_relative_modes[];
 extern int feedmultiply;
 extern int extrudemultiply; // Sets extrude multiply factor (in percent)
 extern float current_position[NUM_AXIS] ;
-extern float axis_scaling[3];  // Build size scaling
+extern float axis_scaling[NUM_AXIS];  // Build size scaling
 
 extern bool SoftEndsEnabled;
 
@@ -197,7 +197,7 @@ extern int GCal_X, GCal_Y,  // Position points for GridCal (Default 3)
            GPos_X, GPos_Y;  // used to keep calibration positions in loop
 
 
-extern float add_homeing[3];
+extern float add_homeing[NUM_AXIS];
 extern float min_pos[3];
 extern float max_pos[3];
 extern int fanSpeed;

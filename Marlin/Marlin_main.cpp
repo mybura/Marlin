@@ -142,7 +142,7 @@
 // M365 - SCARA calibration: Scaling factor, X, Y, Z axis
 // M366 - SCARA calibration: Move to Theta and Psi position
 
-// M370 - Morgan Z calibration: Initialise calbration
+// M370 - Morgan Z calibration: Initialise calbration - Specifying N will cause the init not to clear out the current grid and allow for fine tuning
 // M371 - Manual claibration point program
 // M372 - Calculate all calibration points using data aquired
 // M373 - End calibration
@@ -167,8 +167,8 @@ int feedmultiply=100; //100->1 200->2
 int saved_feedmultiply;
 int extrudemultiply=100; //100->1 200->2
 float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
-float add_homeing[3]={0,0,0};                            // Additional Homing :Theta and Psi is X and Y for SCARA
-float axis_scaling[3]={0,0,0};                                    // Build size scaling
+float add_homeing[NUM_AXIS]={0,0,0,0};                            // Additional Homing :Theta and Psi is X and Y for SCARA
+float axis_scaling[NUM_AXIS]={1,1,1,1};                           // Build size scaling
 
 bool SoftEndsEnabled = true;
 
@@ -662,13 +662,16 @@ static void axis_is_at_home(int axis) {
      //SERIAL_ECHOPGM("addhome X="); SERIAL_ECHO(add_homeing[X_AXIS]);
      //SERIAL_ECHOPGM("addhome Theta="); SERIAL_ECHO(delta[X_AXIS]);
      //SERIAL_ECHOPGM("   addhome Psi+Theta="); SERIAL_ECHOLN(delta[Y_AXIS]);
-      
+     
+      delta[X_AXIS] = 90;      // Theta
+      delta[Y_AXIS] = 180;     // Psi
+
      calculate_forward(delta);
      
      //SERIAL_ECHOPGM("addhome X="); SERIAL_ECHO(delta[X_AXIS]);
      //SERIAL_ECHOPGM("   addhome Y="); SERIAL_ECHOLN(delta[Y_AXIS]);
-     
-    current_position[axis] = delta[axis];
+
+      current_position[axis] = delta[axis];
     
     // SCARA home positions are based on configuration since the actual limits are determined by the 
     // inverse kinematic transform.
@@ -725,6 +728,25 @@ static void homeaxis(int axis) {
     feedrate = 0.0;
     endstops_hit_on_purpose();
   }
+
+#ifdef MORGAN_USE_Y_ENDSTOPS_FOR_HOME_AND_CALIBRATE  
+  // As part of Morgan Psi Calibration, move it back to MAX Y ENDSTOP
+  if (axis==Y_AXIS)
+  {
+    current_position[axis] = 0;
+    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    destination[axis] = 3 * Z_MAX_LENGTH * -home_dir(axis);
+    feedrate = homing_feedrate[axis];
+    plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+    st_synchronize();
+
+    axis_is_at_home(axis);					
+    destination[axis] = current_position[axis];
+    feedrate = 0.0;
+    endstops_hit_on_purpose();
+  }
+#endif
+
 }
 #define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
 
@@ -738,95 +760,8 @@ void advance_axis (int axis, float delta_to_add)
     st_synchronize();
 }
 
-void process_commands()
+void HomeAllAxis()
 {
-  unsigned long codenum; //throw away variable
-  char *starpos = NULL;
-  
-  int counterx, countery;
-
-  if(code_seen('G'))
-  {
-    switch((int)code_value())
-    {
-    case 0: // G0 -> G1
-    case 1: // G1
-      if(Stopped == false && dCal_X) {    // Ensure Unit homed.
-        //  SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
-        //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
-        get_coordinates(); // For X Y Z E F
-        //   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
-        //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
-        prepare_move();
-        //   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
-        //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
-        //ClearToSend();
-        return;
-      }
-      else {
-         SERIAL_ECHOLN("  No movement - Home first...");
-      }  
-      break;
-    /*      // Disable Arcs, for now.
-    case 2: // G2  - CW ARC
-      if(Stopped == false) {
-        get_arc_coordinates();
-        prepare_arc_move(true);
-        return;
-      }
-    case 3: // G3  - CCW ARC
-      if(Stopped == false) {
-        get_arc_coordinates();
-        prepare_arc_move(false);
-        return;
-      } */
-    case 4: // G4 dwell
-      LCD_MESSAGEPGM(MSG_DWELL);
-      codenum = 0;
-      if(code_seen('P')) codenum = code_value(); // milliseconds to wait
-      if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
-      
-      st_synchronize();
-      codenum += millis();  // keep track of when we started waiting
-      previous_millis_cmd = millis();
-      while(millis()  < codenum ){
-        manage_heater();
-        manage_inactivity();
-        lcd_update();
-      }
-      break;
-      #ifdef FWRETRACT  
-      case 10: // G10 retract
-      if(!retracted) 
-      {
-        destination[X_AXIS]=current_position[X_AXIS];
-        destination[Y_AXIS]=current_position[Y_AXIS];
-        destination[Z_AXIS]=current_position[Z_AXIS]; 
-        current_position[Z_AXIS]+=-retract_zlift;
-        destination[E_AXIS]=current_position[E_AXIS]-retract_length; 
-        feedrate=retract_feedrate;
-        retracted=true;
-        prepare_move();
-      }
-      
-      break;
-      case 11: // G10 retract_recover
-      if(!retracted) 
-      {
-        destination[X_AXIS]=current_position[X_AXIS];
-        destination[Y_AXIS]=current_position[Y_AXIS];
-        destination[Z_AXIS]=current_position[Z_AXIS]; 
-        
-        current_position[Z_AXIS]+=retract_zlift;
-        current_position[E_AXIS]+=-retract_recover_length; 
-        feedrate=retract_recover_feedrate;
-        retracted=false;
-        prepare_move();
-      }
-      break;
-      #endif //FWRETRACT
-    case 28: //G28 Home all Axis one at a time 
-
       // Get the head away from the bed/printed object before we zero to home
       advance_axis(Z_AXIS,5);
   
@@ -929,15 +864,151 @@ void process_commands()
         feedrate = homing_feedrate[X_AXIS];;
 
         destination[Z_AXIS] = current_position[Z_AXIS] + 5;
-        destination[X_AXIS] = SCARA_home_safe_starting_x;
-        destination[Y_AXIS] = SCARA_home_safe_starting_y;
+//        destination[X_AXIS] = SCARA_home_safe_starting_x;
+//        destination[Y_AXIS] = SCARA_home_safe_starting_y;
+        destination[X_AXIS] = current_position[X_AXIS];
+        destination[Y_AXIS] = current_position[Y_AXIS];
            
         prepare_move();
         st_synchronize();    // finish move
 
         feedrate = saved_feedrate;
         feedmultiply = saved_feedmultiply;
+
+        SERIAL_ECHO_START;
+        SERIAL_ECHOLN("Homed at position :");
+        SERIAL_ECHO(" X:");
+        SERIAL_ECHO(current_position[X_AXIS]);
+        SERIAL_ECHO(" Y:");
+        SERIAL_ECHO(current_position[Y_AXIS]);
+        SERIAL_ECHO(" Z:");
+        SERIAL_ECHOLN(current_position[Z_AXIS]);
       #endif
+}
+
+// Moves the head to the expected X and Y coordinate with the Z as the last saved calibration value for that position.
+void ZCalMoveIntoToPosition()
+{
+    // Move to the next position and try not to catch the bed by lowering it first and then lifting it
+    destination[Z_AXIS] = 5;
+    feedrate = 10000;
+    
+    prepare_move();
+    st_synchronize();    // finish move
+    
+    destination[X_AXIS] = GPos_X * X_MAX_POS / GCal_X + 1;  // Add one to make sure the right cal grid item is indexed in the lookup later
+    destination[Y_AXIS] = GPos_Y * Y_MAX_POS / GCal_X + 1;  // Add one to make sure the right cal grid item is indexed in the lookup later
+      
+    prepare_move();
+    st_synchronize();    // finish move
+    
+    // Prepare for the calibration. This will be 0 if the grid was cleared by M370 C otherwise we start with the previous calibration session value
+    destination[Z_AXIS] = Arm_lookup[(int)(current_position[X_AXIS]/X_MAX_POS * GCal_X)][(int)(current_position[Y_AXIS]/Y_MAX_POS * GCal_Y)];
+    
+    prepare_move();
+    st_synchronize();    // finish move
+    
+    SERIAL_ECHO_START;
+    SERIAL_ECHOLN("Moved to lookup position :");
+    SERIAL_ECHO(" X:");
+    SERIAL_ECHO(current_position[X_AXIS]);
+    SERIAL_ECHO(" Y:");
+    SERIAL_ECHO(current_position[Y_AXIS]);
+    SERIAL_ECHO(" Z:");
+    SERIAL_ECHOLN(current_position[Z_AXIS]);
+}
+
+void process_commands()
+{
+  unsigned long codenum; //throw away variable
+  char *starpos = NULL;
+  
+  int counterx, countery;
+
+  if(code_seen('G'))
+  {
+    switch((int)code_value())
+    {
+    case 0: // G0 -> G1
+    case 1: // G1
+      if(Stopped == false && dCal_X) {    // Ensure Unit homed.
+        //  SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
+        //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
+        get_coordinates(true); // For X Y Z E F
+        //   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
+        //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
+        prepare_move();
+        //   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
+        //  SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
+        //ClearToSend();
+        return;
+      }
+      else {
+         SERIAL_ECHOLN("  No movement - Home first...");
+      }  
+      break;
+    /*      // Disable Arcs, for now.
+    case 2: // G2  - CW ARC
+      if(Stopped == false) {
+        get_arc_coordinates();
+        prepare_arc_move(true);
+        return;
+      }
+    case 3: // G3  - CCW ARC
+      if(Stopped == false) {
+        get_arc_coordinates();
+        prepare_arc_move(false);
+        return;
+      } */
+    case 4: // G4 dwell
+      LCD_MESSAGEPGM(MSG_DWELL);
+      codenum = 0;
+      if(code_seen('P')) codenum = code_value(); // milliseconds to wait
+      if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+      
+      st_synchronize();
+      codenum += millis();  // keep track of when we started waiting
+      previous_millis_cmd = millis();
+      while(millis()  < codenum ){
+        manage_heater();
+        manage_inactivity();
+        lcd_update();
+      }
+      break;
+      #ifdef FWRETRACT  
+      case 10: // G10 retract
+      if(!retracted) 
+      {
+        destination[X_AXIS]=current_position[X_AXIS];
+        destination[Y_AXIS]=current_position[Y_AXIS];
+        destination[Z_AXIS]=current_position[Z_AXIS]; 
+        current_position[Z_AXIS]+=-retract_zlift;
+        destination[E_AXIS]=current_position[E_AXIS]-retract_length; 
+        feedrate=retract_feedrate;
+        retracted=true;
+        prepare_move();
+      }
+      
+      break;
+      case 11: // G10 retract_recover
+      if(!retracted) 
+      {
+        destination[X_AXIS]=current_position[X_AXIS];
+        destination[Y_AXIS]=current_position[Y_AXIS];
+        destination[Z_AXIS]=current_position[Z_AXIS]; 
+        
+        current_position[Z_AXIS]+=retract_zlift;
+        current_position[E_AXIS]+=-retract_recover_length; 
+        feedrate=retract_recover_feedrate;
+        retracted=false;
+        prepare_move();
+      }
+      break;
+      #endif //FWRETRACT
+    case 28: //G28 Home all Axis one at a time 
+
+      HomeAllAxis();
+
       break;
     case 90: // G90
       relative_mode = false;
@@ -1943,7 +2014,7 @@ void process_commands()
       SoftEndsEnabled = false;              // Ignore soft endstops during calibration
       SERIAL_ECHOLN(" Soft endstops disabled ");
       if(Stopped == false && dCal_X) {
-        get_coordinates(); // For X Y Z E F
+        get_coordinates(false); // For X Y Z E F
         delta[0] = destination[0];
         delta[1] = destination[1];
         calculate_forward(delta);
@@ -1954,7 +2025,9 @@ void process_commands()
         return;
       }
     break;
-    case 370:  // M370  Initialise Bed Level to Zero 
+    case 370:  // M370  Initialise Bed Level to Zero and move the head to home position
+      
+      HomeAllAxis();
       
       Y_gridcal = true;
       
@@ -1968,16 +2041,28 @@ void process_commands()
       dCal_Y = Y_MAX_POS / GCal_Y;
       dCal_Y_Inv = 1.0 / dCal_Y;
       
-      for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+      // If the C parameter is specified, then  reset the bed level
+      if(code_seen('C'))
       {
-        for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+        for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
         {
-          Arm_lookup[counterx][countery] = 0;
-        }  
+          for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+          {
+            Arm_lookup[counterx][countery] = 0;
+          }  
+        }
+
+        SERIAL_ECHO_START;
+        SERIAL_ECHOLN(" Y-level grid cleared  ");
+      }
+      else
+      {
+        SERIAL_ECHO_START;
+        SERIAL_ECHOLN(" Using Y-level grid from previous calibration. Use M370 C to clear it.  ");
       }
       
-      SERIAL_ECHO_START;
-      SERIAL_ECHOLN(" Y-level grid cleared  ");
+      ZCalMoveIntoToPosition();
+      
       break;
       
     case 372:  // M372   Program current zero position into levelling grid.
@@ -1986,6 +2071,7 @@ void process_commands()
         
       if(Y_gridcal)        // only program when gridcal set
       {
+        SERIAL_ECHOLN("Storing lookup for:");
         SERIAL_ECHO(" X:");
         SERIAL_ECHO(current_position[X_AXIS]);
         SERIAL_ECHO(" Y:");
@@ -2008,24 +2094,6 @@ void process_commands()
       
       if (Y_gridcal)
       {
-        // Move to the next position and try not to catch the bed by lowering it first and then lifting it
-        destination[Z_AXIS] = 5;
-        feedrate = 10000;
-
-        prepare_move();
-        st_synchronize();    // finish move
-
-        destination[X_AXIS] = GPos_X * X_MAX_POS / GCal_X;
-        destination[Y_AXIS] = GPos_Y * Y_MAX_POS / GCal_X;
-          
-        prepare_move();
-        st_synchronize();    // finish move
-
-        destination[Z_AXIS] = 0; // Prepare for the calibration
-
-        prepare_move();
-        st_synchronize();    // finish move
-        
         GPos_X++;
         
         if ((GPos_X * X_MAX_POS / GCal_X) > X_MAX_POS){
@@ -2037,6 +2105,8 @@ void process_commands()
             SERIAL_ECHOLN("Last calibration point...");
           }
         }
+
+        ZCalMoveIntoToPosition();
       }
           
     break;      
@@ -2064,6 +2134,21 @@ void process_commands()
   
     break;  
     
+    case 376:  // debug: print grid to file  
+
+        for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+        {
+           for (countery = 0; countery < Y_ARMLOOKUP_LENGTH; countery++)
+           for (counterx = 0; counterx < X_ARMLOOKUP_LENGTH; counterx++)
+           {
+             SERIAL_ECHOPAIR(" " , Arm_lookup[counterx][countery] ); 
+              
+           }
+           //EEPROM_WRITE_VAR(i,Arm_lookup[counterx]);        // Z-arm corrcetion save
+    
+        }
+  
+    break;  
       
     case 999: // M999: Restart after being stopped
       Stopped = false;
@@ -2121,13 +2206,14 @@ void ClearToSend()
   SERIAL_PROTOCOLLNPGM(MSG_OK); 
 }
 
-void get_coordinates()
+void get_coordinates(bool apply_scaling)
 {
   bool seen[4]={false,false,false,false};
   for(int8_t i=0; i < NUM_AXIS; i++) {
     if(code_seen(axis_codes[i])) 
     {
-      destination[i] = (float)code_value() + (axis_relative_modes[i] || relative_mode)*current_position[i];
+      float scale = (apply_scaling) ? axis_scaling[i] : 1.0;
+      destination[i] = (float)code_value()*scale + (axis_relative_modes[i] || relative_mode)*current_position[i];
       seen[i]=true;
     }
     else destination[i] = current_position[i]; //Are these else lines really needed?
@@ -2180,7 +2266,7 @@ void get_arc_coordinates()
    bool relative_mode_backup = relative_mode;
    relative_mode = true;
 #endif
-   get_coordinates();
+   get_coordinates(true);
 #ifdef SF_ARC_FIX
    relative_mode=relative_mode_backup;
 #endif
@@ -2358,7 +2444,7 @@ int calculate_YGrid()
 }
 */
 
-#define RADIANS(x) (x) / SCARA_RAD2DEG
+#define RADIANS(x) ((x) * (1.0/SCARA_RAD2DEG))
 #define sqr(x) ((x)*(x))
 
 void calculate_forward(float f_delta[3])
@@ -2369,7 +2455,8 @@ void calculate_forward(float f_delta[3])
   
   s = sqrt(sqr(LengthTheta) + sqr(LengthPsi) - 2 * LengthTheta * LengthPsi * cos(RADIANS(f_delta[Y_AXIS] - f_delta[X_AXIS])));
 
-  float sSquared = sqr(s);  C2 = acos((sqr(LengthPsiExt) - sSquared - sqr(LengthThetaExt)) / (-2 * s * LengthThetaExt));
+  float sSquared = sqr(s);  
+  C2 = acos((sqr(LengthPsiExt) - sSquared - sqr(LengthThetaExt)) / (-2 * s * LengthThetaExt));
   B2 = acos((sqr(LengthPsi) - sSquared - sqr(LengthTheta)) / (-2 * s * LengthTheta));
   P1 = B2 + C2;
   p = sqrt(sqr(LengthTheta) + sqr(LengthThetaExt) - 2 * LengthTheta * LengthThetaExt * cos(P1));
@@ -2379,6 +2466,7 @@ void calculate_forward(float f_delta[3])
   // f_delta[Y_AXIS] is Psi angle
   rho = RADIANS(f_delta[X_AXIS]) + D;
 
+// Derived from X,Y coordinates
   delta[X_AXIS] = p * cos(rho) + SCARA_offset_x;  
   delta[Y_AXIS] = p * sin(rho) + SCARA_offset_y;  
 }  
@@ -2397,7 +2485,7 @@ void calculate_delta(float cartesian[3])
   // SCARA "X" = theta
   // SCARA "Y" = psi+theta, motor movement inverted.
 
-  float SCARA_pos[2], D, C1, p, rho, cos_rho;
+  float SCARA_pos[2], D, C1, p, rho; //, cos_rho;
   
   SCARA_pos[X_AXIS] = (cartesian[X_AXIS] - SCARA_offset_x);  // Translate SCARA to standard X Y
   SCARA_pos[Y_AXIS] = (cartesian[Y_AXIS] - SCARA_offset_y); 
@@ -2405,13 +2493,19 @@ void calculate_delta(float cartesian[3])
   rho = atan2(SCARA_pos[Y_AXIS], SCARA_pos[X_AXIS]);
   
   // Avoid divide by zero
-  cos_rho = cos(rho);
-  if (cos_rho < 0.01)
+/*  cos_rho = cos(rho);
+  if (cos_rho < 0.1)
     p = SCARA_pos[Y_AXIS]/sin(rho);
   else
     p = SCARA_pos[X_AXIS]/cos_rho;
+  */
+
+  float pSquared = sqr(SCARA_pos[X_AXIS]) + sqr(SCARA_pos[Y_AXIS]);
   
-  float pSquared = sqr(p);
+  p = sqrt(pSquared);
+  
+//  double pSquared = sqr(p);
+
   D = acos((sqr(LengthThetaExt) - sqr(LengthTheta) - pSquared) / (-2 * LengthTheta * p));
   C1 = acos((sqr(LengthPsiExt) - sqr(LengthPsi) - pSquared) / (-2 * LengthPsi * p));
   
@@ -2502,8 +2596,12 @@ float calc_bed_delta(float cartesian[3])
   CartY = cartesian[Y_AXIS] * dCal_Y_Inv;                  // Get the current sector (Y)
   fCartY = ((int)cartesian[Y_AXIS] * dCal_Y_Inv) - CartY;                           // Find floating point
   
-  dCartX1 = (1-fCartX) * Arm_lookup[CartX][CartY] + (fCartX) * Arm_lookup[CartX+1][CartY];
-  dCartX2 = (1-fCartX) * Arm_lookup[CartX][CartY+1] + (fCartX) * Arm_lookup[CartX+1][CartY+1];
+  float fCartXFrom1 = (1-fCartX);
+  int CartXPlus1 = CartX+1;
+  int CartYPlus1 = CartY+1;
+  
+  dCartX1 = fCartXFrom1 * Arm_lookup[CartX][CartY]      + (fCartX) * Arm_lookup[CartXPlus1][CartY];
+  dCartX2 = fCartXFrom1 * Arm_lookup[CartX][CartYPlus1] + (fCartX) * Arm_lookup[CartXPlus1][CartYPlus1];
   
   /*
   // DEBUG Stuff
@@ -2518,9 +2616,9 @@ float calc_bed_delta(float cartesian[3])
   SERIAL_ECHO("  Z=");
   SERIAL_ECHOLN(dCartZ);
   // ********************************************************************
-  
   */
-  return fCartY * dCartX2 + (1-fCartY) * dCartX1;    // Calculated Z-delta   
+  
+  return dCartX1 + fCartY * (dCartX2 - dCartX1);    // Calculated Z-delta   
 }
 
 
@@ -2557,11 +2655,11 @@ void prepare_move()
   float fraction = fraction_steps;
   for (int s = 1; s <= steps; s++) {
     for(int8_t i=0; i < NUM_AXIS; i++) {
-      destination[i] = current_position[i] + difference[i] * fraction;
+      destination[i] = current_position[i] + difference[i] * (fraction_steps * s);
     }
     
-    //SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
-    //      SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
+//    SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(destination[X_AXIS]);
+//    SERIAL_ECHOPGM(" y="); SERIAL_ECHOLN(destination[Y_AXIS]);
     
     calculate_delta(destination);
     plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],

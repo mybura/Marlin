@@ -101,26 +101,27 @@
 
 // Uncomment to use Morgan scara mode
 #define MORGAN_SCARA  
+#define MORGAN_USE_Y_ENDSTOPS_FOR_HOME_AND_CALIBRATE 
 
 // Length of arms
 // Measure arm lengths precisely and enter. Length is the distance from the centre axis of the bearing on either side
 // of each arm to the other side.
-#define LengthTheta 150250.0/1000    //um      Preprocessor cannot handle decimal point...
-#define LengthPsi   151500.0/1000    //um      define in micrometer and leave the / 1000 for the compiler to sort out
-#define LengthThetaExt 150750.0/1000 //um      
-#define LengthPsiExt   158750.0/1000 //um      
+#define LengthTheta 149060.0/1000    //um      Preprocessor cannot handle decimal point...
+#define LengthPsi   150955.0/1000    //um      define in micrometer and leave the / 1000 for the compiler to sort out
+#define LengthThetaExt 151945.0/1000 //um      
+#define LengthPsiExt   158785.0/1000 //um      
 
 // SCARA tower offset (position of Tower relative to bed zero position) 
 // This needs to be reasonably accurate as it defines the printbed position in the SCARA space.
-#define SCARA_offset_x 100 //mm   
-#define SCARA_offset_y -80 //mm
-#define SCARA_RAD2DEG 57.2957795  // to convert RAD to degrees
+#define SCARA_offset_x  100 //mm   
+#define SCARA_offset_y  -80  //mm
+#define SCARA_RAD2DEG 57.295779513082320876798154814105  // to convert RAD to degrees
 //#define SCARA_DEG2RAD 0.0174532
 
 // To prevent unsafe movements because the starting x/y could
 // be past the soft endstops, move to the below position after a home
-#define SCARA_home_safe_starting_x  0 //mm   
-#define SCARA_home_safe_starting_y 50 //mm
+//#define SCARA_home_safe_starting_x  0 //mm   
+//#define SCARA_home_safe_starting_y  0 //mm
 
 //// The following define selects which power supply you have. Please choose the one that matches your setup
 // 1 = ATX
@@ -274,7 +275,7 @@
 //===========================================================================
 
 // Uncomment the following line to enable CoreXY kinematics
-// #define COREXY
+//#define COREXY
 
 // corse Endstop Settings
 #define ENDSTOPPULLUPS // Comment this out (using // at the start of the line) to disable the endstop pullup resistors
@@ -299,8 +300,8 @@
 #endif
 
 // The pullups are needed if you directly connect a mechanical endswitch between the signal and ground pins.
-const bool X_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops. 
-const bool Y_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops. 
+const bool X_ENDSTOPS_INVERTING = false; // set to true to invert the logic of the endstops. 
+const bool Y_ENDSTOPS_INVERTING = false; // set to true to invert the logic of the endstops. 
 const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops. 
 //#define DISABLE_MAX_ENDSTOPS
 
@@ -332,10 +333,10 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
 // Travel limits after homing
-#define X_MAX_POS 210
-#define X_MIN_POS -20
-#define Y_MAX_POS 160
-#define Y_MIN_POS -10
+#define X_MAX_POS 200
+#define X_MIN_POS -10
+#define Y_MAX_POS 175
+#define Y_MIN_POS -2
 #define Z_MAX_POS 240
 #define Z_MIN_POS -10
 
@@ -353,8 +354,8 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Manual homing switch locations:
 // For deltabots this means top and center of the cartesian print volume.
 // Scara: x centered, y 0
-#define MANUAL_X_HOME_POS -104                 // CHANGE ANYTHING HERE RECALIBRATION IS NEEDED VIA M360 process
-#define MANUAL_Y_HOME_POS -3
+#define MANUAL_X_HOME_POS 0                 // CHANGE ANYTHING HERE RECALIBRATION IS NEEDED VIA M360 process
+#define MANUAL_Y_HOME_POS 0
 #define MANUAL_Z_HOME_POS 0  // Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
@@ -364,16 +365,16 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // default settings 
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {285.65, 285.65, 126.5, 443.4}
-#define DEFAULT_MAX_FEEDRATE          {500, 500, 10, 45}  // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {100, 100, 50, 150}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {143.7885, 144.2697, 4038.0798, 443.4}
+#define DEFAULT_MAX_FEEDRATE          {24000, 24000, 32000, 45}  // (mm/sec)
+#define DEFAULT_MAX_ACCELERATION      {400, 400, 400, 150}    // X, Y, Z, E maximum start speed for accelerated moves.
 
-#define DEFAULT_ACCELERATION          100   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
+#define DEFAULT_ACCELERATION          400   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  100   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 // 
-#define DEFAULT_XYJERK                40.0    // (mm/sec)            // Stored in M205 on eeprom
-#define DEFAULT_ZJERK                 40.0    // (mm/sec)
+#define DEFAULT_XYJERK                20.0    // (mm/sec)            // Stored in M205 on eeprom
+#define DEFAULT_ZJERK                 100.0    // (mm/sec)
 #define DEFAULT_EJERK                 15.0    // (mm/sec)
 
 //===========================================================================
@@ -407,6 +408,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
 //#define G3D_PANEL
 
+
 //automatic expansion
 #if defined(ULTIMAKERCONTROLLER) || defined(REPRAP_DISCOUNT_SMART_CONTROLLER) || defined(G3D_PANEL)
  #define ULTIPANEL
@@ -415,7 +417,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 // Preheat Constants
 #define PLA_PREHEAT_HOTEND_TEMP 170
-#define PLA_PREHEAT_HPB_TEMP 50
+#define PLA_PREHEAT_HPB_TEMP 60
 #define PLA_PREHEAT_FAN_SPEED 0		// Insert Value between 0 and 255
 
 #define ABS_PREHEAT_HOTEND_TEMP 220
